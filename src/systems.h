@@ -23,15 +23,14 @@ namespace systems {
 		}
 
 		void execute() {
-			auto mlc = ecs::maskListCopy();
-			for (auto &i : mlc) {
-				ecs::entity_id ent = i.first;
-				ecs::entity_id e_mask = i.second;
+			auto mlc = components::mask_list();
+			for (ecs::entity_id ent = 0; ent < MAX_ENTITIES; ++ent) {
+				ecs::entity_id e_mask = mlc[ent];
 				if ((e_mask & mask()) == mask()) {
 					try {
 						func(components::getComponent<Reqs>(ent)...);
 					} catch (std::out_of_range) {
-						std::cout << "Entity not found" << std::endl;
+						std::cerr << "Entity " << ent << " not found" << std::endl;
 					}
 				}
 			}

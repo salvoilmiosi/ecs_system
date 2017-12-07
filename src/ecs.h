@@ -5,14 +5,12 @@
 
 namespace ecs {
 	template<typename T> inline void addComponent(entity_id ent, T component) {
+		if (ent >= MAX_ENTITIES) return;
+
 		// trova la lista di componenti di T e aggiunge component
 		auto &cl = components::getList<T>();
 		cl[ent] = component;
-		if (mask_list.find(ent) == mask_list.end()) {
-			mask_list[ent] = cl.mask();
-		} else {
-			mask_list[ent] |= cl.mask();
-		}
+		components::mask_list()[ent] |= cl.mask();
 	}
 
 	inline void addComponents(entity_id ent) {}
@@ -23,32 +21,41 @@ namespace ecs {
 	}
 
 	template<typename T> inline bool hasComponent(entity_id ent) {
+		if (ent >= MAX_ENTITIES) return false;
+
 		auto &cl = components::getList<T>();
-		return cl.find(ent) != cl.end();
-		// oppure controllare se matcha la maschera
+		return components::mask_list()[ent] & cl.mask() == cl.mask();
 	}
 
 	template<typename T> inline void removeComponent(entity_id ent, T component) {
+		if (ent >= MAX_ENTITIES) return;
+
 		auto &cl = components::getList<T>();
 		cl.erase(ent);
-		mask_list[ent] &= ~(cl.mask());
+		components::mask_list()[ent] &= ~(cl.mask());
 	}
 
 	template<typename ... T> inline entity_id createEntity(T ... components) {
-		entity_id ent = ++maxEntityId; // should create a function to manage ids
+		try {
+			entity_id ent = components::getNextId();
 
-		addComponents(ent, components ...);
+			addComponents(ent, components ...);
 
-		return ent;
+			return ent;
+		} catch (std::out_of_range) {
+			return -1;
+		}
 	}
 
 	inline void removeEntity(entity_id ent) {
+		if (ent >= MAX_ENTITIES) return;
+		
 		// per ogni component_list elimina ent
 		for_each_in_tuple(components::all(), [ent](auto &x) {
 			x.erase(ent);
 		});
-		mask_list[ent] = 0;
-		mask_list.erase(ent);
+		components::mask_list()[ent] = 0;
+		components::mask_list().erase(ent);
 	}
 
 	inline void executeAllSystems() {

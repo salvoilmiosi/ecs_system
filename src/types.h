@@ -18,15 +18,7 @@ inline void for_each_in_tuple(std::tuple<Ts...> & tuple, F func){
 namespace ecs {
 	typedef unsigned int entity_id;
 	
-	typedef unsigned long int component_mask;
-
-	extern std::map<entity_id, component_mask> mask_list;
-	
-	extern entity_id maxEntityId;
-
-	const inline auto maskListCopy() {
-		return mask_list; // TODO create update function
-	}
+	typedef unsigned long int component_mask; // will need to be transformed to bitset when components are more than 32
 }
 
 #endif // __ENTITIES_H__

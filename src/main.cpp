@@ -4,8 +4,8 @@
 
 using namespace components;
 
-static const int SCREEN_W = 800;
-static const int SCREEN_H = 800;
+static const int SCREEN_W = 1024;
+static const int SCREEN_H = 768;
 static const int FPS = 60;
 
 static SDL_Window *window;
@@ -38,13 +38,13 @@ void cleanUp() {
 int main (int argc, char** argv) {
 	if (!init()) return 1;
 
-	ecs::createEntity(position(SCREEN_W / 2.0, SCREEN_H / 2.0), generator());
+	ecs::createEntity(position(SCREEN_W / 2.0, SCREEN_H / 2.0), generator(20));
 
 	SDL_Event event;
 
 	bool quit = false;
 	while(!quit) {
-		SDL_SetRenderDrawColor(renderer, 0xff,0xff,0xff,0xff);
+		SDL_SetRenderDrawColor(renderer, 0x0,0x0,0x0,0xff);
 		SDL_RenderClear(renderer);
 
 		ecs::executeAllSystems();

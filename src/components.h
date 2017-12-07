@@ -1,26 +1,9 @@
 #ifndef __COMPONENTS_H__
 #define __COMPONENTS_H__
 
-#include "types.h"
+#include "component_list.h"
 
 namespace components {
-	extern ecs::component_mask maxMask;
-
-	template<typename T> class component_list : public std::map<ecs::entity_id, T> {
-	private:
-		ecs::component_mask i_mask;
-
-	public:
-		component_list() : std::map<ecs::entity_id, T>() {
-			i_mask = maxMask;
-			maxMask <<= 1;
-		}
-
-		ecs::component_mask mask() {
-			return i_mask;
-		}
-	};
-
 	/************************************************
 	COMPONENTS DEFINED HERE
 	************************************************/

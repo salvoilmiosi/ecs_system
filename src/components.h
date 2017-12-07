@@ -1,69 +1,147 @@
 #ifndef __COMPONENTS_H__
 #define __COMPONENTS_H__
 
-#include <tuple>
-#include <map>
+#include "types.h"
 
-typedef int entity_id;
+namespace components {
+	extern ecs::component_mask maxMask;
 
-namespace comp {
-	typedef long int component_mask;
-
-	static component_mask maxMask = 1;
-
-	template<typename T> class component_list : public std::map<entity_id, T> {
+	template<typename T> class component_list : public std::map<ecs::entity_id, T> {
 	private:
-		const component_mask i_mask;
+		ecs::component_mask i_mask;
 
 	public:
-		component_list() : std::map<entity_id, T>(), i_mask(maxMask) {
+		component_list() : std::map<ecs::entity_id, T>() {
+			i_mask = maxMask;
 			maxMask <<= 1;
 		}
 
-		component_mask mask() {
+		ecs::component_mask mask() {
 			return i_mask;
 		}
 	};
-
-	std::map<entity_id, component_mask> mask_list;
 
 	/************************************************
 	COMPONENTS DEFINED HERE
 	************************************************/
 
+	struct reflect {
+		ecs::entity_id id;
+
+		reflect() {}
+		reflect(ecs::entity_id id) : id(id) {}
+	};
+
+	struct printable {
+		const char *name;
+
+		printable() {}
+		printable(const char *name) : name(name) {}
+	};
+
+	struct sprite {
+		const char *src;
+		int color;
+
+		sprite() {}
+		sprite(const char *src) : src(src) {}
+		sprite(int color) : color(color) {}
+	};
+
 	struct position {
 		float x, y;
 
-		position() {}
+		position() {
+			x = 0.f;
+			y = 0.f;
+		}
 		position(float x, float y) : x(x), y(y) {}
 	};
 
 	struct velocity {
 		float x, y;
 
-		velocity() {}
+		velocity() {
+			x = 0.0f;
+			y = 0.0f;
+		}
 		velocity(float x, float y) : x(x), y(y) {}
 	};
 
-	struct sprite {
-		const char *src;
+	struct acceleration {
+		float x, y;
 
-		sprite() {}
-		sprite(const char *src) : src(src) {}
+		acceleration() {
+			x = 0.f;
+			y = 0.f;
+		}
+		acceleration(float x, float y) : x(x), y(y) {}
 	};
-	
-	auto all = std::make_tuple(
-		component_list<position>(),
-		component_list<velocity>(),
-		component_list<sprite>()
-	);
 
-	template<typename T> inline component_list<T> &getList() {
-		return std::get<component_list<T>>(all);
+	struct scale {
+		float value;
+
+		scale() {
+			value = 1.f;
+		}
+		scale(float value) : value(value) {}
+	};
+
+	struct shrinking {
+		float value;
+
+		shrinking() {
+			value = 1.f;
+		}
+		shrinking(float value) : value(value) {}
+	};
+
+	struct health {
+		int value;
+
+		health() {
+			value = 100;
+		}
+		health(int value) : value(value) {}
+	};
+
+	struct generator {
+		int particles_per_tick;
+
+		generator() {
+			particles_per_tick = 1;
+		}
+		generator(int ptt) : particles_per_tick(ptt) {}
+	};
+
+	/************************************************
+	************************************************/
+	template<typename ... Ts> static constexpr auto createComponentLists() {
+		return std::make_tuple(component_list<Ts>()...);
 	}
 
-	template<typename T> inline T &getComponent(entity_id ent) {
-		return getList<T>().at(ent);
+	inline auto &all() {
+		static auto obj = createComponentLists<
+			reflect,
+			printable,
+			sprite,
+			position,
+			velocity,
+			acceleration,
+			scale,
+			shrinking,
+			health,
+			generator
+		>();
+		return obj;
+	}
+
+	template<typename T> inline component_list<T> &getList() {
+		return std::get<component_list<T>>(all());
+	}
+	
+	template<typename T> inline T &getComponent(ecs::entity_id ent) {
+		return components::getList<T>().at(ent);
 	}
 }
 

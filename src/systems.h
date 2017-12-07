@@ -1,69 +1,82 @@
 #ifndef __SYSTEMS_H__
 #define __SYSTEMS_H__
 
+#include <functional>
 #include <iostream>
 
 #include "components.h"
-#include "tuple_util.h"
 
-namespace sys {
+namespace systems {
 	template<typename ... Reqs>
 	class system {
 	private:
 		std::function<void(Reqs &...)> func;
-		comp::component_mask i_mask;
+		ecs::component_mask i_mask;
 
 	public:
 		system(auto func) : func(func) {
 			i_mask = 0;
-			auto req_list = std::make_tuple(comp::getList<Reqs>() ...);
+			auto req_list = std::make_tuple(components::getList<Reqs>() ...);
 			for_each_in_tuple(req_list, [this](auto &x){
 				i_mask |= x.mask();
 			});
 		}
 
 		void execute() {
-			for (auto &i : comp::mask_list) {
-				entity_id ent = i.first;
-				entity_id e_mask = i.second;
+			auto mlc = ecs::maskListCopy();
+			for (auto &i : mlc) {
+				ecs::entity_id ent = i.first;
+				ecs::entity_id e_mask = i.second;
 				if ((e_mask & mask()) == mask()) {
-					func(comp::getComponent<Reqs>(ent)...);
+					try {
+						func(components::getComponent<Reqs>(ent)...);
+					} catch (std::out_of_range) {
+						std::cout << "Entity not found" << std::endl;
+					}
 				}
 			}
 		}
 
-		comp::component_mask mask() {
+		ecs::component_mask mask() {
 			return i_mask;
 		}
 	};
 
-	/*************************************
-	SYSTEMS DEFINED HERE
-	*************************************/
+	using namespace components;
 
-	auto movement = system<comp::position, comp::velocity>([](auto &pos, auto &vel){
-		pos.x += vel.x;
-		pos.y += vel.y;
-	});
+	void print(reflect&, printable&, position&);
 
-	auto print = system<comp::position, comp::sprite>([](auto &pos, auto &spr){
-		std::cout << "Position: (" << pos.x << ", " << pos.y << "), Sprite: " << spr.src << std::endl;
-	});
+	void draw(sprite&, position&, scale&);
 
-	auto draw = system<comp::position, comp::sprite>([](auto &pos, auto &spr){
-		// draws entity
-	});
+	void tick(reflect&, health&);
 
-	auto all = std::make_tuple(
-		movement,
-		print,
-		draw
-	);
+	void generate(position&, generator&);
 
-	void executeAll() {
-		for_each_in_tuple(all, [](auto &x){
-			x.execute();
-		});
+	inline auto &all() {
+		static auto obj = std::make_tuple(
+			system<reflect, printable, position>(print),
+
+			system<sprite, position, scale>(draw),
+
+			system<position, velocity>([](auto &pos, auto &vel) { // move
+				pos.x += vel.x;
+				pos.y += vel.y;
+			}),
+
+			system<velocity, acceleration>([](auto &vel, auto &acc) { // accelerate
+				vel.x += acc.x;
+				vel.y += acc.y;
+			}),
+
+			system<scale, shrinking>([](auto &sca, auto &shr) { // shrinking
+				sca.value *= shr.value;
+			}),
+
+			system<reflect, health>(tick),
+
+			system<position, generator>(generate)
+		);
+		return obj;
 	}
 }
 

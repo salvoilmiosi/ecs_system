@@ -1,20 +1,17 @@
-#include <iostream>
+#include <SDL2/SDL.h>
 
 #include "ecs.h"
 
-int main(int argc, char const *argv[]) {
-	entity_id ent = createEntity();//comp::position(0, 0), comp::sprite("sprite.png"));
+using namespace components;
 
-	sys::executeAll();
+static const int WIDTH = 400;
+static const int HEIGHT = 400;
 
-	addComponent(ent, comp::position(0,0));
-	addComponent(ent, comp::sprite("sprite.png"));
-
-	sys::executeAll();
-
-	addComponent(ent, comp::velocity(10, 10));
-
-	sys::executeAll();
-
+int main(int argc, char **argv) {
+	auto id = ecs::createEntity(printable("Generator"), position(WIDTH / 2.0, HEIGHT / 2.0), generator());
+	ecs::addComponent(id, reflect(id));
+	for(int i=0; i<100; i++) {
+		ecs::executeAllSystems();
+	}
 	return 0;
 }

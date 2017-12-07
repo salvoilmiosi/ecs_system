@@ -4,19 +4,19 @@
 #include <tuple>
 #include <map>
 
-typedef int entity_t;
+typedef int entity_id;
 
 namespace comp {
 	typedef long int component_mask;
 
 	static component_mask maxMask = 1;
 
-	template<typename T> class component_list : public std::map<entity_t, T> {
+	template<typename T> class component_list : public std::map<entity_id, T> {
 	private:
 		const component_mask i_mask;
 
 	public:
-		component_list() : std::map<entity_t, T>(), i_mask(maxMask) {
+		component_list() : std::map<entity_id, T>(), i_mask(maxMask) {
 			maxMask <<= 1;
 		}
 
@@ -25,7 +25,7 @@ namespace comp {
 		}
 	};
 
-	std::map<entity_t, component_mask> mask_list;
+	std::map<entity_id, component_mask> mask_list;
 
 	/************************************************
 	COMPONENTS DEFINED HERE
@@ -62,7 +62,7 @@ namespace comp {
 		return std::get<component_list<T>>(all);
 	}
 
-	template<typename T> inline T &getComponent(entity_t ent) {
+	template<typename T> inline T &getComponent(entity_id ent) {
 		return getList<T>().at(ent);
 	}
 }

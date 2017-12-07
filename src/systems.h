@@ -24,8 +24,8 @@ namespace sys {
 
 		void execute() {
 			for (auto &i : comp::mask_list) {
-				entity_t ent = i.first;
-				entity_t e_mask = i.second;
+				entity_id ent = i.first;
+				entity_id e_mask = i.second;
 				if ((e_mask & mask()) == mask()) {
 					func(comp::getComponent<Reqs>(ent)...);
 				}

@@ -3,7 +3,7 @@
 #include "ecs.h"
 
 int main(int argc, char const *argv[]) {
-	entity_t ent = createEntity();//comp::position(0, 0), comp::sprite("sprite.png"));
+	entity_id ent = createEntity();//comp::position(0, 0), comp::sprite("sprite.png"));
 
 	sys::executeAll();
 

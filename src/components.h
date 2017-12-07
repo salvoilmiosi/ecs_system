@@ -109,7 +109,7 @@ namespace components {
 		int particles_per_tick;
 
 		generator() {
-			particles_per_tick = 1;
+			particles_per_tick = 7;
 		}
 		generator(int ptt) : particles_per_tick(ptt) {}
 	};

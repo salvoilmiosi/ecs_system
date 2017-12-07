@@ -4,14 +4,66 @@
 
 using namespace components;
 
-static const int WIDTH = 400;
-static const int HEIGHT = 400;
+static const int SCREEN_W = 800;
+static const int SCREEN_H = 800;
+static const int FPS = 60;
 
-int main(int argc, char **argv) {
-	auto id = ecs::createEntity(printable("Generator"), position(WIDTH / 2.0, HEIGHT / 2.0), generator());
-	ecs::addComponent(id, reflect(id));
-	for(int i=0; i<100; i++) {
+static SDL_Window *window;
+SDL_Renderer *renderer;
+
+bool init() {
+	if (SDL_Init(SDL_INIT_EVERYTHING) == -1)
+		return false;
+
+	window = SDL_CreateWindow("Sistema ECS",
+		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+		SCREEN_W, SCREEN_H, SDL_WINDOW_SHOWN);
+	if (window == NULL)
+		return false;
+
+	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+	if (renderer == NULL)
+		return false;
+
+	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
+	return true;
+}
+
+void cleanUp() {
+	SDL_DestroyRenderer(renderer);
+	SDL_Quit();
+}
+
+int main (int argc, char** argv) {
+	if (!init()) return 1;
+
+	ecs::createEntity(position(SCREEN_W / 2.0, SCREEN_H / 2.0), generator());
+
+	SDL_Event event;
+
+	bool quit = false;
+	while(!quit) {
+		SDL_SetRenderDrawColor(renderer, 0xff,0xff,0xff,0xff);
+		SDL_RenderClear(renderer);
+
 		ecs::executeAllSystems();
+
+		SDL_RenderPresent(renderer);
+
+		while (SDL_PollEvent(&event)) {
+			switch (event.type) {
+			case SDL_QUIT:
+				quit = true;
+				break;
+			default:
+				break;
+			}
+		}
+
+		SDL_Delay(1000 / FPS);
 	}
+
+	cleanUp();
 	return 0;
 }

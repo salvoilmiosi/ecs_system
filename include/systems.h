@@ -6,72 +6,66 @@
 
 #include "components.h"
 
-namespace systems {
+namespace ecs {
 	template<typename ... Reqs>
 	class system {
 	private:
-		std::function<void(Reqs &...)> func;
-		ecs::component_mask i_mask;
+		std::function<void(entity_id, Reqs &...)> func;
+		component_mask i_mask;
 
 	public:
 		system(auto func) : func(func) {
 			i_mask = 0;
-			auto req_list = std::make_tuple(components::getList<Reqs>() ...);
+			auto req_list = std::make_tuple(getList<Reqs>() ...);
 			for_each_in_tuple(req_list, [this](auto &x){
 				i_mask |= x.mask();
 			});
 		}
 
 		void execute() {
-			auto mlc = components::mask_list();
-			for (ecs::entity_id ent = 0; ent < MAX_ENTITIES; ++ent) {
-				ecs::entity_id e_mask = mlc[ent];
+			auto &mlc = mask_list();
+			for (entity_id ent = 0; ent < MAX_ENTITIES; ++ent) {
+				entity_id e_mask = mlc[ent];
 				if ((e_mask & mask()) == mask()) {
-					try {
-						func(components::getComponent<Reqs>(ent)...);
-					} catch (std::out_of_range) {
-						std::cerr << "Entity " << ent << " not found" << std::endl;
-					}
+					func(ent, getComponent<Reqs>(ent)...);
 				}
 			}
 		}
 
-		ecs::component_mask mask() {
+		component_mask mask() {
 			return i_mask;
 		}
 	};
 
-	using namespace components;
+	void print(entity_id, printable&, position&);
 
-	void print(reflect&, printable&, position&);
+	void draw(entity_id, sprite&, position&, scale&);
 
-	void draw(sprite&, position&, scale&);
+	void tick(entity_id, health&);
 
-	void tick(reflect&, health&);
+	void generate(entity_id, position&, generator&);
 
-	void generate(position&, generator&);
-
-	inline auto &all() {
+	inline auto &allSystems() {
 		static auto obj = std::make_tuple(
-			system<reflect, printable, position>(print),
+			system<printable, position>(print),
 
 			system<sprite, position, scale>(draw),
 
-			system<position, velocity>([](auto &pos, auto &vel) { // move
+			system<position, velocity>([](entity_id, auto &pos, auto &vel) { // move
 				pos.x += vel.x;
 				pos.y += vel.y;
 			}),
 
-			system<velocity, acceleration>([](auto &vel, auto &acc) { // accelerate
+			system<velocity, acceleration>([](entity_id, auto &vel, auto &acc) { // accelerate
 				vel.x += acc.x;
 				vel.y += acc.y;
 			}),
 
-			system<scale, shrinking>([](auto &sca, auto &shr) { // shrinking
+			system<scale, shrinking>([](entity_id, auto &sca, auto &shr) { // shrinking
 				sca.value *= shr.value;
 			}),
 
-			system<reflect, health>(tick),
+			system<health>(tick),
 
 			system<position, generator>(generate)
 		);

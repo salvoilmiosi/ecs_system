@@ -3,17 +3,10 @@
 
 #include "component_list.h"
 
-namespace components {
+namespace ecs {
 	/************************************************
 	COMPONENTS DEFINED HERE
 	************************************************/
-
-	struct reflect {
-		ecs::entity_id id;
-
-		reflect() {}
-		reflect(ecs::entity_id id) : id(id) {}
-	};
 
 	struct printable {
 		const char *name;
@@ -103,9 +96,8 @@ namespace components {
 		return std::make_tuple(component_list<Ts>()...);
 	}
 
-	inline auto &all() {
+	inline auto &allComponents() {
 		static auto obj = createComponentLists<
-			reflect,
 			printable,
 			sprite,
 			position,
@@ -120,11 +112,11 @@ namespace components {
 	}
 
 	template<typename T> inline component_list<T> &getList() {
-		return std::get<component_list<T>>(all());
+		return std::get<component_list<T>>(allComponents());
 	}
 	
-	template<typename T> inline T &getComponent(ecs::entity_id ent) {
-		return components::getList<T>().at(ent);
+	template<typename T> inline T &getComponent(entity_id ent) {
+		return getList<T>()[ent];
 	}
 }
 

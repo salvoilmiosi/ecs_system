@@ -5,16 +5,14 @@
 
 #include <cstdlib>
 
-using namespace components;
-
 extern SDL_Renderer *renderer;
 
-namespace systems {
-	void print(reflect &me, printable &p, position &pos) {
-		std::cout << "Entity " << p.name << "(" << me.id << "), Position (" << pos.x << ", " << pos.y << ")" << std::endl;
+namespace ecs {
+	void print(entity_id id, printable &p, position &pos) {
+		std::cout << "Entity " << p.name << "(" << id << "), Position (" << pos.x << ", " << pos.y << ")" << std::endl;
 	}
 
-	void draw(sprite &spr, position &pos, scale &s) {
+	void draw(entity_id, sprite &spr, position &pos, scale &s) {
 		SDL_Rect rect {(int)(pos.x - s.value * 0.5f), (int)(pos.y - s.value * 0.5f), (int)s.value, (int)s.value};
 		Uint8 r = (spr.color & 0xff000000) >> (8 * 3);
 		Uint8 g = (spr.color & 0x00ff0000) >> (8 * 2);
@@ -25,11 +23,11 @@ namespace systems {
 		SDL_RenderFillRect(renderer, &rect);
 	}
 
-	void tick(reflect &me, health &hp) {
+	void tick(entity_id id, health &hp) {
 		--hp.value;
 		if (hp.value <= 0) {
-			//std::cout << "Entity " << me.id << " is dead" << std::endl;
-			ecs::removeEntity(me.id);
+			//std::cout << "Entity " << id << " is dead" << std::endl;
+			removeEntity(id);
 		}
 	}
 
@@ -67,10 +65,9 @@ namespace systems {
 		return ret;
 	}
 
-	void generate(position &pos, generator &gen) {
+	void generate(entity_id, position &pos, generator &gen) {
 		for (int i=0; i<gen.particles_per_tick; ++i) {
-			ecs::entity_id ent = ecs::createEntity(position_random(pos), sprite_random(), velocity_random(), scale_random(), shrinking(0.985f), health(rand() % 100 + 50), acceleration_random());
-			ecs::addComponent(ent, reflect(ent));
+			createEntity(position_random(pos), sprite_random(), velocity_random(), scale_random(), shrinking(0.985f), health(rand() % 100 + 50), acceleration_random());
 		}
 	}
 }

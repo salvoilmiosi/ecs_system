@@ -31,7 +31,6 @@ all: $(BIN_DIR)/$(OUT_BIN)
 clean:
 	rm -rf $(BIN_DIR)
 	rm -rf $(OBJ_DIR)
-	$(MAKE) -C $(SDL_draw_dir) clean
 
 $(BIN_DIR)/$(OUT_BIN): $(OBJECTS)
 	$(LD) -o $(BIN_DIR)/$(OUT_BIN) $(OBJECTS) $(LDFLAGS) $(LIBS)

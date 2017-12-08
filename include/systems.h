@@ -2,7 +2,6 @@
 #define __SYSTEMS_H__
 
 #include <functional>
-#include <iostream>
 
 #include "components.h"
 #include "entity_list.h"

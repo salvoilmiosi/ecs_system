@@ -1,18 +1,18 @@
 #ifndef __ECS_H__
 #define __ECS_H__
 
-#include "component_list.h"
+#include "types.h"
 
 namespace ecs {
 	template<typename Components>
-	class manager {
+	class world {
 	private:
 		Components comp;
 
 		entity_list<> ents;
 
 	public:
-		manager() {}
+		world() {}
 
 	public:
 		template<typename T> void addComponent(entity &ent, T component) {

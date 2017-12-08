@@ -7,7 +7,7 @@
 
 extern SDL_Renderer *renderer;
 
-extern ecs::manager<MyComponents> mgr;
+extern ecs::world<MyComponents> wld;
 
 void print_func(ecs::entity &me, printable &p, position &pos) {
 	std::cout << "Entity " << p.name << "(" << me.id << "), Position (" << pos.x << ", " << pos.y << ")" << std::endl;
@@ -42,7 +42,7 @@ void health_tick_func(ecs::entity& me, health &hp) {
 	--hp.value;
 	if (hp.value <= 0) {
 		//std::cout << "Entity " << id << " is dead" << std::endl;
-		mgr.removeEntity(me);
+		wld.removeEntity(me);
 	}
 }
 
@@ -67,7 +67,7 @@ void particle_generator_func(ecs::entity&, position &pos, generator &gen) {
 			((float) rand() / RAND_MAX - 0.5f) * 0.2f);
 
 		try {
-			mgr.createEntity(position_random, sprite_random, velocity_random, acceleration_random,
+			wld.createEntity(position_random, sprite_random, velocity_random, acceleration_random,
 				scale(rand() % 15 + 25.f), shrinking(0.983f), health(rand() % 100 + 50));
 		} catch (std::out_of_range) {
 			// out of memory

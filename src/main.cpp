@@ -11,7 +11,7 @@ static const int FPS = 60;
 static SDL_Window *window;
 SDL_Renderer *renderer;
 
-ecs::manager<MyComponents> mgr;
+ecs::world<MyComponents> wld;
 
 auto MySystems = std::make_tuple(
 	ecs::system<printable, position>(print_func),
@@ -48,15 +48,15 @@ void cleanUp() {
 
 void executeAllSystems() {
 	ecs::for_each_in_tuple(MySystems,[](auto &x){
-		mgr.executeSystem(x);
+		wld.executeSystem(x);
 	});
 }
 
 int main (int argc, char** argv) {
 	if (!init()) return 1;
 
-	mgr.createEntity(position(SCREEN_W / 2.0, SCREEN_H / 2.0), generator(20));
-	mgr.updateEntities();
+	wld.createEntity(position(SCREEN_W / 2.0, SCREEN_H / 2.0), generator(20));
+	wld.updateEntities();
 
 	SDL_Event event;
 
@@ -66,7 +66,7 @@ int main (int argc, char** argv) {
 		SDL_RenderClear(renderer);
 
 		executeAllSystems();
-		mgr.updateEntities();
+		wld.updateEntities();
 
 		SDL_RenderPresent(renderer);
 

@@ -27,8 +27,8 @@ namespace ecs {
 		system(auto func) : func(func) {}
 
 		template<typename Components, typename Entities>
-		void execute(Components comp, Entities ents) {
-			static component_mask mask = comp.template getMask(Ts()...);
+		void execute(Components &comp, Entities &ents) {
+			static component_mask mask = comp.template getMask<Ts ...>();
 			for (entity &ent : ents) {
 				if ((ent.mask & mask) == mask) {
 					func(ent, comp.template getComponent<Ts>(ent) ...);

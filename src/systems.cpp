@@ -9,23 +9,23 @@ extern SDL_Renderer *renderer;
 
 extern ecs::manager<MyComponents> mgr;
 
-ecs::system<printable, position> print([](ecs::entity &me, printable &p, position &pos) {
+void print_func(ecs::entity &me, printable &p, position &pos) {
 	std::cout << "Entity " << p.name << "(" << me.id << "), Position (" << pos.x << ", " << pos.y << ")" << std::endl;
-});
+};
 
-ecs::system<position, velocity> move([](ecs::entity&, auto &pos, auto &vel) {
+void move_func(ecs::entity&, position &pos, velocity &vel) {
 	pos.x += vel.x;
 	pos.y += vel.y;
-});
+};
 
-ecs::system<velocity, acceleration> accelerate([](ecs::entity&, auto &vel, auto &acc) {
+void accelerate_func(ecs::entity&, velocity &vel, acceleration &acc) {
 	vel.x += acc.x;
 	vel.y += acc.y;
-});
+};
 
-ecs::system<scale, shrinking> shrinker([](ecs::entity&, auto &sca, auto &shr) {
+void shrink_func(ecs::entity&, scale &sca, shrinking &shr) {
 	sca.value *= shr.value;
-});
+};
 
 void draw_func(ecs::entity&, sprite &spr, position &pos, scale &s) {
 	SDL_Rect rect {(int)(pos.x - s.value * 0.5f), (int)(pos.y - s.value * 0.5f), (int)s.value, (int)s.value};
@@ -48,24 +48,23 @@ void health_tick_func(ecs::entity& me, health &hp) {
 
 void particle_generator_func(ecs::entity&, position &pos, generator &gen) {
 	for (int i=0; i<gen.particles_per_tick; ++i) {
-		position position_random;
-		position_random.x = pos.x + ((float) rand() / RAND_MAX - 0.5f) * 100.f;
-		position_random.y = pos.y + ((float) rand() / RAND_MAX - 0.5f) * 100.f;
-
-		sprite sprite_random;
 		Uint8 r = rand() % 0xff;
 		Uint8 g = rand() % 0xff;
 		Uint8 b = rand() % 0xff;
 		Uint8 a = rand() % 0xff;
-		sprite_random.color = (r << (8 * 3)) | (g << (8 * 2)) | (b << (8 * 1)) | (a << (8 * 0));
+		sprite sprite_random((r << (8 * 3)) | (g << (8 * 2)) | (b << (8 * 1)) | (a << (8 * 0)));
+		
+		position position_random(
+			pos.x + ((float) rand() / RAND_MAX - 0.5f) * 100.f,
+			pos.y + ((float) rand() / RAND_MAX - 0.5f) * 100.f);
 
-		velocity velocity_random;
-		velocity_random.x = ((float) rand() / RAND_MAX - 0.5f) * 8.f;
-		velocity_random.y = ((float) rand() / RAND_MAX - 0.5f) * 8.f;
+		velocity velocity_random(
+			((float) rand() / RAND_MAX - 0.5f) * 8.f,
+			((float) rand() / RAND_MAX - 0.5f) * 8.f);
 
-		acceleration acceleration_random;
-		acceleration_random.x = ((float) rand() / RAND_MAX - 0.5f) * 0.2f;
-		acceleration_random.y = ((float) rand() / RAND_MAX - 0.5f) * 0.2f;
+		acceleration acceleration_random(
+			((float) rand() / RAND_MAX - 0.5f) * 0.2f,
+			((float) rand() / RAND_MAX - 0.5f) * 0.2f);
 
 		try {
 			mgr.createEntity(position_random, sprite_random, velocity_random, acceleration_random,

@@ -42,7 +42,6 @@ namespace ecs {
 			entity &ent = ents.createEntity();
 
 			addComponents(ent, components ...);
-#include "ecs.h"
 
 			return ent;
 		}

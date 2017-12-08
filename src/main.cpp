@@ -13,7 +13,11 @@ SDL_Renderer *renderer;
 
 ecs::manager<MyComponents> mgr;
 
-auto MySystems = std::make_tuple(print, move, accelerate, shrinker,
+auto MySystems = std::make_tuple(
+	ecs::system<printable, position>(print_func),
+	ecs::system<position, velocity>(move_func),
+	ecs::system<velocity, acceleration>(accelerate_func),
+	ecs::system<scale, shrinking>(shrink_func),
 	ecs::system<sprite, position, scale>(draw_func),
 	ecs::system<health>(health_tick_func),
 	ecs::system<position, generator>(particle_generator_func));

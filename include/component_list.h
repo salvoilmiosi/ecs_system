@@ -23,12 +23,12 @@ namespace ecs {
 		std::tuple<component_data<Components>...> data = createComponentLists();
 	public:
 		template<typename ... Ts>
-		const component_mask getMask() {
+		component_mask getMask() {
 			component_mask n = 0;
-			auto tup = std::make_tuple(Ts()...); // THERE HAS TO BE A BETTER WAY
-			for_each_in_tuple([n](auto &x){
-				n |= std::get<component_data<x>>(data).mask;
-			});
+			component_mask ns[] = {std::get<component_data<Ts>>(data).mask ...};
+			for (component_mask x : ns) {
+				n |= x;
+			};
 			return n;
 		}
 

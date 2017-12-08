@@ -17,8 +17,8 @@ namespace ecs {
 	}
 
 	typedef unsigned int entity_id;
-	
-	typedef unsigned long int component_mask; // will need to be transformed to bitset when components are more than 32
+
+	typedef unsigned long int component_mask;
 }
 
 #endif // __TYPES_H__

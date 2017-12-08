@@ -54,10 +54,6 @@ namespace ecs {
 		return ret;
 	}
 
-	scale scale_random() {
-		return scale(rand() % 10 + 20.f);
-	}
-
 	acceleration acceleration_random() {
 		acceleration ret;
 		ret.x = ((float) rand() / RAND_MAX - 0.5f) * 0.2f;
@@ -67,7 +63,7 @@ namespace ecs {
 
 	void generate(entity_id, position &pos, generator &gen) {
 		for (int i=0; i<gen.particles_per_tick; ++i) {
-			createEntity(position_random(pos), sprite_random(), velocity_random(), scale_random(), shrinking(0.985f), health(rand() % 100 + 50), acceleration_random());
+			createEntity(position_random(pos), sprite_random(), velocity_random(), scale(rand() % 15 + 25.f), shrinking(0.983f), health(rand() % 100 + 50), acceleration_random());
 		}
 	}
 }

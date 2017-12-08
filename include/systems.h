@@ -25,7 +25,7 @@ namespace ecs {
 		void execute() {
 			auto &mlc = mask_list();
 			for (entity_id ent = 0; ent < MAX_ENTITIES; ++ent) {
-				entity_id e_mask = mlc[ent];
+				auto e_mask = mlc[ent];
 				if ((e_mask & mask()) == mask()) {
 					func(ent, getComponent<Reqs>(ent)...);
 				}

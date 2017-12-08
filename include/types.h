@@ -8,6 +8,8 @@
 #include "entities.h"
 
 namespace ecs {
+	static const size_t MAX_ENTITIES_DEFAULT = 100;
+
 	template<class F, class...Ts, std::size_t...Is>
 	inline void for_each_in_tuple(std::tuple<Ts...> & tuple, F func, std::index_sequence<Is...>){
 		using expander = int[];
@@ -29,54 +31,44 @@ namespace ecs {
 		return first | or_all(then ...);
 	}
 
-	template<typename T, size_t Size = MAX_ENTITIES>
-	class component_data : public std::array<T, Size> {
+	template<typename Component, size_t CompSize, size_t Size>
+	class component_entry : public std::array<Component, Size> {
 	public:
-		const component_mask mask;
+		const component_mask<CompSize> mask;
 
-		component_data(size_t &n) : mask(1 << n++) {}
+		component_entry(size_t &n) : mask(1 << n++) {}
 	};
 
 	template<typename ... Components>
 	class component_list {
-	private:
-		constexpr auto createComponentLists() {
-			size_t counter = 0;
-			return std::make_tuple(component_data<Components>(counter)...);
-		}
-
-		std::tuple<component_data<Components>...> data {createComponentLists()};
 	public:
-		template<typename T>
-		constexpr component_data<T> &getList() {
-			return std::get<component_data<T>>(data);
-		}
-		
-		template<typename ... Ts>
-		constexpr component_mask getMask() {
-			return or_all(getList<Ts>().mask ...);
+		static constexpr size_t size() {
+			return sizeof...(Components);
 		}
 
-		template<typename T>
-		constexpr T &getComponent(entity ent) {
-			return getList<T>()[ent.id];
+		template<size_t MaxEntities>
+		using ComponentData = std::tuple<component_entry<Components, size(), MaxEntities>...>;
+
+		template<size_t MaxEntities>
+		constexpr auto createComponentData() {
+			size_t counter = 0;
+			return std::make_tuple(component_entry<Components, size(), MaxEntities>(counter)...);
 		}
 	};
 
 	template<typename ... Ts>
 	class system {
 	private:
-		std::function<void(entity&, Ts& ...)> func;
+		std::function<void(entity_id, Ts& ...)> func;
 
 	public:
 		system(auto func) : func(func) {}
 
-		template<typename Components, typename Entities>
-		void execute(Components &comp, Entities &ents) {
-			static component_mask mask = comp.template getMask<Ts ...>();
-			for (entity &ent : ents) {
+		void execute(auto &world, auto &ents) {
+			static auto mask = world.template generateMask<Ts ...>();
+			for (auto &ent : ents) {
 				if ((ent.mask & mask) == mask) {
-					func(ent, comp.template getComponent<Ts>(ent) ...);
+					func(ent.id, world.template getComponent<Ts>(ent.id) ...);
 				}
 			}
 		}

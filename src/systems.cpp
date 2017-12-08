@@ -7,27 +7,27 @@
 
 extern SDL_Renderer *renderer;
 
-extern ecs::world<MyComponents> wld;
+extern ecs::world<MyComponents, MAX_ENTITIES> wld;
 
-void print_func(ecs::entity &me, printable &p, position &pos) {
-	std::cout << "Entity " << p.name << "(" << me.id << "), Position (" << pos.x << ", " << pos.y << ")" << std::endl;
+void print_func(ecs::entity_id me, printable &p, position &pos) {
+	std::cout << "Entity " << p.name << "(" << me << "), Position (" << pos.x << ", " << pos.y << ")" << std::endl;
 };
 
-void move_func(ecs::entity&, position &pos, velocity &vel) {
+void move_func(ecs::entity_id, position &pos, velocity &vel) {
 	pos.x += vel.x;
 	pos.y += vel.y;
 };
 
-void accelerate_func(ecs::entity&, velocity &vel, acceleration &acc) {
+void accelerate_func(ecs::entity_id, velocity &vel, acceleration &acc) {
 	vel.x += acc.x;
 	vel.y += acc.y;
 };
 
-void shrink_func(ecs::entity&, scale &sca, shrinking &shr) {
+void shrink_func(ecs::entity_id, scale &sca, shrinking &shr) {
 	sca.value *= shr.value;
 };
 
-void draw_func(ecs::entity&, sprite &spr, position &pos, scale &s) {
+void draw_func(ecs::entity_id, sprite &spr, position &pos, scale &s) {
 	SDL_Rect rect {(int)(pos.x - s.value * 0.5f), (int)(pos.y - s.value * 0.5f), (int)s.value, (int)s.value};
 	Uint8 r = (spr.color & 0xff000000) >> (8 * 3);
 	Uint8 g = (spr.color & 0x00ff0000) >> (8 * 2);
@@ -38,7 +38,7 @@ void draw_func(ecs::entity&, sprite &spr, position &pos, scale &s) {
 	SDL_RenderFillRect(renderer, &rect);
 }
 
-void health_tick_func(ecs::entity& me, health &hp) {
+void health_tick_func(ecs::entity_id me, health &hp) {
 	--hp.value;
 	if (hp.value <= 0) {
 		//std::cout << "Entity " << id << " is dead" << std::endl;
@@ -46,7 +46,7 @@ void health_tick_func(ecs::entity& me, health &hp) {
 	}
 }
 
-void particle_generator_func(ecs::entity&, position &pos, generator &gen) {
+void particle_generator_func(ecs::entity_id, position &pos, generator &gen) {
 	for (int i=0; i<gen.particles_per_tick; ++i) {
 		Uint8 r = rand() % 0xff;
 		Uint8 g = rand() % 0xff;

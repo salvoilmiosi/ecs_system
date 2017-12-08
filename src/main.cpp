@@ -11,7 +11,7 @@ static const int FPS = 60;
 static SDL_Window *window;
 SDL_Renderer *renderer;
 
-ecs::world<MyComponents> wld;
+ecs::world<MyComponents, MAX_ENTITIES> wld;
 
 auto MySystems = std::make_tuple(
 	ecs::system<printable, position>(print_func),

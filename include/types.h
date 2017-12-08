@@ -3,6 +3,7 @@
 
 #include <tuple>
 #include <array>
+#include <bitset>
 
 namespace ecs {
 	template<class F, class...Ts, std::size_t...Is>
@@ -17,10 +18,11 @@ namespace ecs {
 	}
 	
 	static const size_t MAX_ENTITIES = 4096;
+	static const size_t COMPONENT_NUM = 32;
 
-	typedef unsigned int entity_id;
+	typedef size_t entity_id;
 
-	typedef unsigned long int component_mask;
+	typedef std::bitset<COMPONENT_NUM> component_mask;
 	
 	struct entity {
 		entity_id id;

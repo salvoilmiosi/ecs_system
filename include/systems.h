@@ -24,7 +24,7 @@ namespace ecs {
 		}
 
 		void execute() {
-			for (entity &ent : mask_list()) {
+			for (entity &ent : allEntities()) {
 				if ((ent.mask & mask()) == mask()) {
 					func(ent, getComponent<Reqs>(ent)...);
 				}
@@ -35,6 +35,10 @@ namespace ecs {
 			return i_mask;
 		}
 	};
+
+	/************************************************
+	SYSTEMS DEFINED HERE
+	************************************************/
 
 	void print(entity&, printable&, position&);
 
@@ -69,6 +73,15 @@ namespace ecs {
 			system<position, generator>(generate)
 		);
 		return obj;
+	}
+	
+	/************************************************
+	************************************************/
+	
+	inline void executeAllSystems() {
+		for_each_in_tuple(allSystems(), [](auto &x){
+			x.execute();
+		});
 	}
 }
 

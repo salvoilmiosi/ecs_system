@@ -1,9 +1,27 @@
 #ifndef __COMPONENTS_H__
 #define __COMPONENTS_H__
 
-#include "component_list.h"
+#include "types.h"
 
 namespace ecs {
+	inline component_mask nextMask() {
+		static component_mask obj = 1;
+		return (obj <<= 1) >> 1;
+	}
+
+	template<typename T, size_t Size = MAX_ENTITIES>
+	class component_list : public std::array<T, Size> {
+	private:
+		const component_mask i_mask;
+
+	public:
+		component_list() : std::array<T, Size>(), i_mask(nextMask()) {}
+
+		component_mask mask() {
+			return i_mask;
+		}
+	};
+
 	/************************************************
 	COMPONENTS DEFINED HERE
 	************************************************/
@@ -92,6 +110,7 @@ namespace ecs {
 
 	/************************************************
 	************************************************/
+	
 	template<typename ... Ts> static constexpr auto createComponentLists() {
 		return std::make_tuple(component_list<Ts>()...);
 	}

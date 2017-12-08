@@ -63,7 +63,12 @@ namespace ecs {
 
 	void generate(entity&, position &pos, generator &gen) {
 		for (int i=0; i<gen.particles_per_tick; ++i) {
-			createEntity(position_random(pos), sprite_random(), velocity_random(), scale(rand() % 15 + 25.f), shrinking(0.983f), health(rand() % 100 + 50), acceleration_random());
+			try {
+				createEntity(position_random(pos), sprite_random(), velocity_random(), scale(rand() % 15 + 25.f), shrinking(0.983f), health(rand() % 100 + 50), acceleration_random());
+			} catch (std::out_of_range) {
+				// out of memory
+				return;
+			}
 		}
 	}
 }

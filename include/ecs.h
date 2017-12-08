@@ -1,6 +1,8 @@
 #ifndef __ECS_H__
 #define __ECS_H__
 
+#include "components.h"
+#include "entity_list.h"
 #include "systems.h"
 
 namespace ecs {
@@ -28,7 +30,7 @@ namespace ecs {
 	}
 
 	template<typename ... T> inline entity &createEntity(T ... components) {
-		entity &ent = mask_list().createEntity();
+		entity &ent = allEntities().createEntity();
 
 		addComponents(ent, components ...);
 
@@ -41,14 +43,8 @@ namespace ecs {
 		ent.alive = false;
 	}
 
-	inline void executeAllSystems() {
-		for_each_in_tuple(allSystems(), [](auto &x){
-			x.execute();
-		});
-	}
-
 	inline void updateEntities() {
-		mask_list().update();
+		allEntities().update();
 	}
 }
 

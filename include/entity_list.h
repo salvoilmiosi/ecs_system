@@ -65,7 +65,7 @@ namespace ecs {
 		}
 	};
 
-	inline auto &mask_list() {
+	inline auto &allEntities() {
 		static entity_list obj;
 		return obj;
 	}

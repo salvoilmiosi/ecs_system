@@ -4,59 +4,51 @@
 #include "systems.h"
 
 namespace ecs {
-	template<typename T> inline void addComponent(entity_id ent, T component) {
-		if (ent >= MAX_ENTITIES) return;
-
+	template<typename T> inline void addComponent(entity &ent, T component) {
 		// trova la lista di componenti di T e aggiunge component
 		auto &cl = getList<T>();
-		cl[ent] = component;
-		mask_list()[ent] |= cl.mask();
+		cl[ent.id] = component;
+		ent.mask |= cl.mask();
 	}
 
-	inline void addComponents(entity_id ent) {}
+	inline void addComponents(entity ent) {}
 
-	template<typename T, typename ... Ts> inline void addComponents(entity_id ent, T first, Ts ... components) {
+	template<typename T, typename ... Ts> inline void addComponents(entity &ent, T first, Ts ... components) {
 		addComponent(ent, first);
 		addComponents(ent, components ...);
 	}
 
-	template<typename T> inline bool hasComponent(entity_id ent) {
-		if (ent >= MAX_ENTITIES) return false;
-
+	template<typename T> inline bool hasComponent(const entity &ent) {
 		auto &cl = getList<T>();
-		return mask_list()[ent] & cl.mask() == cl.mask();
+		return ent.mask & cl.mask() == cl.mask();
 	}
 
-	template<typename T> inline void removeComponent(entity_id ent, T component) {
-		if (ent >= MAX_ENTITIES) return;
-
-		auto &cl = getList<T>();
-		mask_list()[ent] &= ~(cl.mask());
+	template<typename T> inline void removeComponent(const entity &ent, T component) {
+		ent.mask &= ~(getList<T>().mask());
 	}
 
-	template<typename ... T> inline entity_id createEntity(T ... components) {
-		try {
-			entity_id ent = getNextId();
+	template<typename ... T> inline entity &createEntity(T ... components) {
+		entity &ent = mask_list().createEntity();
 
-			addComponents(ent, components ...);
+		addComponents(ent, components ...);
 
-			return ent;
-		} catch (std::out_of_range) {
-			return -1;
-		}
+		return ent;
 	}
 
-	inline void removeEntity(entity_id ent) {
-		if (ent >= MAX_ENTITIES) return;
-		
+	inline void removeEntity(entity &ent) {
 		// basta settare a 0 la maschera
-		mask_list()[ent] = 0;
+		ent.mask = 0;
+		ent.alive = false;
 	}
 
 	inline void executeAllSystems() {
 		for_each_in_tuple(allSystems(), [](auto &x){
 			x.execute();
 		});
+	}
+
+	inline void updateEntities() {
+		mask_list().update();
 	}
 }
 

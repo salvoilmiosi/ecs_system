@@ -37,6 +37,7 @@ int main (int argc, char** argv) {
 	if (!init()) return 1;
 
 	ecs::createEntity(ecs::position(SCREEN_W / 2.0, SCREEN_H / 2.0), ecs::generator(20));
+	ecs::updateEntities();
 
 	SDL_Event event;
 
@@ -46,6 +47,7 @@ int main (int argc, char** argv) {
 		SDL_RenderClear(renderer);
 
 		ecs::executeAllSystems();
+		ecs::updateEntities();
 
 		SDL_RenderPresent(renderer);
 

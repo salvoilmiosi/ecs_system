@@ -15,10 +15,24 @@ namespace ecs {
 	inline void for_each_in_tuple(std::tuple<Ts...> & tuple, F func){
 		for_each_in_tuple(tuple, func, std::make_index_sequence<sizeof...(Ts)>());
 	}
+	
+	static const size_t MAX_ENTITIES = 4096;
 
 	typedef unsigned int entity_id;
 
 	typedef unsigned long int component_mask;
+	
+	struct entity {
+		entity_id id;
+		component_mask mask;
+		bool alive;
+
+		entity() {
+			id = 0;
+			mask = 0;
+			alive = false;
+		}
+	};
 }
 
 #endif // __TYPES_H__

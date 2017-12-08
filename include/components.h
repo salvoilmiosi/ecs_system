@@ -115,8 +115,8 @@ namespace ecs {
 		return std::get<component_list<T>>(allComponents());
 	}
 	
-	template<typename T> inline T &getComponent(entity_id ent) {
-		return getList<T>()[ent];
+	template<typename T> inline T &getComponent(entity ent) {
+		return getList<T>()[ent.id];
 	}
 }
 

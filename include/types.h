@@ -18,22 +18,17 @@ namespace ecs {
 		for_each_in_tuple(tuple, func, std::make_index_sequence<sizeof...(Ts)>());
 	}
 
-	template<typename ... Ts> inline component_mask getMask() {
-		return 0;
-		// TODO
-	}
-
 	template<typename ... Ts>
 	class system {
 	private:
 		std::function<void(entity&, Ts& ...)> func;
-		const component_mask mask;
 
 	public:
-		system(auto func) : func(func), mask(getMask<Ts...>()) {}
+		system(auto func) : func(func) {}
 
 		template<typename Components, typename Entities>
 		void execute(Components comp, Entities ents) {
+			static component_mask mask = comp.template getMask(Ts()...);
 			for (entity &ent : ents) {
 				if ((ent.mask & mask) == mask) {
 					func(ent, comp.template getComponent<Ts>(ent) ...);

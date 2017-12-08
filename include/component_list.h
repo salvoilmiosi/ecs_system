@@ -9,19 +9,29 @@ namespace ecs {
 	public:
 		const component_mask mask;
 
-		component_data() : mask(getMask<T>()) {}
+		component_data(size_t &n) : mask(1 << n++) {}
 	};
 
 	template<typename ... Components>
 	class component_list {
 	private:
 		constexpr auto createComponentLists() {
-			return std::make_tuple(component_data<Components>()...);
+			size_t counter = 0;
+			return std::make_tuple(component_data<Components>(counter)...);
 		}
 
 		std::tuple<component_data<Components>...> data = createComponentLists();
-
 	public:
+		template<typename ... Ts>
+		const component_mask getMask() {
+			component_mask n = 0;
+			auto tup = std::make_tuple(Ts()...); // THERE HAS TO BE A BETTER WAY
+			for_each_in_tuple([n](auto &x){
+				n |= std::get<component_data<x>>(data).mask;
+			});
+			return n;
+		}
+
 		template<typename T> inline component_data<T> &getList() {
 			return std::get<component_data<T>>(data);
 		}

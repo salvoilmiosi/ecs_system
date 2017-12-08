@@ -9,7 +9,7 @@ namespace ecs {
 	private:
 		Components comp;
 
-		entity_list<MAX_ENTITIES> ents;
+		entity_list<> ents;
 
 	public:
 		manager() {}

@@ -2,12 +2,21 @@
 
 #include "ecs.h"
 
+#include "systems.h"
+
 static const int SCREEN_W = 1024;
 static const int SCREEN_H = 768;
 static const int FPS = 60;
 
 static SDL_Window *window;
 SDL_Renderer *renderer;
+
+ecs::manager<MyComponents> mgr;
+
+auto MySystems = std::make_tuple(print, move, accelerate, shrinker,
+	ecs::system<sprite, position, scale>(draw_func),
+	ecs::system<health>(health_tick_func),
+	ecs::system<position, generator>(particle_generator_func));
 
 bool init() {
 	if (SDL_Init(SDL_INIT_EVERYTHING) == -1)
@@ -33,11 +42,17 @@ void cleanUp() {
 	SDL_Quit();
 }
 
+void executeAllSystems() {
+	ecs::for_each_in_tuple(MySystems,[](auto &x){
+		mgr.executeSystem(x);
+	});
+}
+
 int main (int argc, char** argv) {
 	if (!init()) return 1;
 
-	ecs::createEntity(ecs::position(SCREEN_W / 2.0, SCREEN_H / 2.0), ecs::generator(20));
-	ecs::updateEntities();
+	mgr.createEntity(position(SCREEN_W / 2.0, SCREEN_H / 2.0), generator(20));
+	mgr.updateEntities();
 
 	SDL_Event event;
 
@@ -46,8 +61,8 @@ int main (int argc, char** argv) {
 		SDL_SetRenderDrawColor(renderer, 0x0, 0x0, 0x0, 0xff);
 		SDL_RenderClear(renderer);
 
-		ecs::executeAllSystems();
-		ecs::updateEntities();
+		executeAllSystems();
+		mgr.updateEntities();
 
 		SDL_RenderPresent(renderer);
 

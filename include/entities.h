@@ -1,9 +1,29 @@
-#ifndef __ENTITY_LIST_H__
-#define __ENTITY_LIST_H__
+#ifndef __ENTITIES_H__
+#define __ENTITIES_H__
 
-#include "types.h"
+#include <bitset>
+#include <array>
 
 namespace ecs {
+	static const size_t MAX_ENTITIES = 4096;
+	static const size_t COMPONENT_NUM = 32;
+
+	typedef size_t entity_id;
+
+	typedef std::bitset<COMPONENT_NUM> component_mask;
+	
+	struct entity {
+		entity_id id;
+		component_mask mask;
+		bool alive;
+
+		entity() {
+			id = 0;
+			mask = 0;
+			alive = false;
+		}
+	};
+
 	template<size_t Size = MAX_ENTITIES>
 	class entity_list : public std::array<entity, Size> {
 	private:
@@ -64,11 +84,6 @@ namespace ecs {
 			currentSize = nextSize = iD;
 		}
 	};
-
-	inline auto &allEntities() {
-		static entity_list obj;
-		return obj;
-	}
 }
 
-#endif
+#endif // __ENTITIES_H__

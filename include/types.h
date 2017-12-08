@@ -2,8 +2,9 @@
 #define __TYPES_H__
 
 #include <tuple>
-#include <array>
-#include <bitset>
+#include <functional>
+
+#include "entities.h"
 
 namespace ecs {
 	template<class F, class...Ts, std::size_t...Is>
@@ -16,23 +17,28 @@ namespace ecs {
 	inline void for_each_in_tuple(std::tuple<Ts...> & tuple, F func){
 		for_each_in_tuple(tuple, func, std::make_index_sequence<sizeof...(Ts)>());
 	}
-	
-	static const size_t MAX_ENTITIES = 4096;
-	static const size_t COMPONENT_NUM = 32;
 
-	typedef size_t entity_id;
+	template<typename ... Ts> inline component_mask getMask() {
+		return 0;
+		// TODO
+	}
 
-	typedef std::bitset<COMPONENT_NUM> component_mask;
-	
-	struct entity {
-		entity_id id;
-		component_mask mask;
-		bool alive;
+	template<typename ... Ts>
+	class system {
+	private:
+		std::function<void(entity&, Ts& ...)> func;
+		const component_mask mask;
 
-		entity() {
-			id = 0;
-			mask = 0;
-			alive = false;
+	public:
+		system(auto func) : func(func), mask(getMask<Ts...>()) {}
+
+		template<typename Components, typename Entities>
+		void execute(Components comp, Entities ents) {
+			for (entity &ent : ents) {
+				if ((ent.mask & mask) == mask) {
+					func(ent, comp.template getComponent<Ts>(ent) ...);
+				}
+			}
 		}
 	};
 }

@@ -14,14 +14,11 @@ namespace ecs {
 	template<size_t Size>
 	class entity_list : public std::array<entity, Size> {
 	private:
-		size_t currentSize;
-		size_t nextSize;
+		size_t currentSize = 0;
+		size_t nextSize = 0;
 
 	public:
 		entity_list() {
-			currentSize = 0;
-			nextSize = 0;
-
 			for (entity_id id = 0; id < Size; ++id) {
 				(*this)[id].id = id;
 			}

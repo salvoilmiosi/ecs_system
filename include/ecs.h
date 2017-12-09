@@ -6,19 +6,33 @@
 namespace ecs {
 	template<typename ComponentList, size_t MaxEntities = MAX_ENTITIES_DEFAULT>
 	class world {
+	public:
+		template<typename T>
+		static constexpr bool isComponent() {
+			return mpl::Contains<T, ComponentList>{};
+		}
+
+		template<typename ... Ts>
+		static constexpr bool areAllComponents() {
+			return mpl::ContainsAll<mpl::TypeList<Ts...>, ComponentList>{};
+		}
+
 	private:
-		ComponentList comp;
+		template<typename ... Ts>
+		using component_data = std::tuple<component_entry<Ts, MaxEntities>...>;
 
-		typename ComponentList::template ComponentData<MaxEntities> data {comp.template createComponentData<MaxEntities>()}; // SO UGLY
+		mpl::Rename<component_data, ComponentList> data;
 
-		entity_list<ComponentList::size(), MaxEntities> ents;
+		entity_list<ComponentList::size, MaxEntities> ents;
 
 	public:
+		world() {}
+
 		template<typename T> void addComponent(entity_id ent, T component) {
+			static_assert(isComponent<T>());
 			// trova la lista di componenti di T e aggiunge component
-			auto &cl = getList<T>();
-			cl[ent] = component;
-			ents.findEntity(ent).mask |= cl.mask;
+			getComponent<T>(ent) = component;
+			ents.findEntity(ent).mask |= generateMask<T>();
 		}
 
 		void addComponents(entity_id ent) {}
@@ -29,12 +43,13 @@ namespace ecs {
 		}
 
 		template<typename T> inline bool hasComponent(entity_id ent) {
-			auto &cl = getList<T>();
+			static_assert(isComponent<T>());
+			auto &cl = getEntry<T>();
 			return ents.findEntity(ent).mask & cl.mask == cl.mask;
 		}
 
 		template<typename T> inline void removeComponent(entity_id ent, T component) {
-			ents.findEntity(ent).mask &= ~(getList<T>().mask);
+			ents.findEntity(ent).mask &= ~(generateMask<T>());
 		}
 
 		template<typename ... T> inline entity_id createEntity(T ... components) {
@@ -44,24 +59,28 @@ namespace ecs {
 		}
 
 		template<typename T>
-		constexpr auto &getList() {
-			return std::get<component_entry<T, ComponentList::size(), MaxEntities>>(data);
+		constexpr auto &getEntry() {
+			return std::get<component_entry<T, MaxEntities>>(data);
 		}
 		
 		template<typename ... Ts>
-		constexpr auto generateMask() {
-			return or_all(getList<Ts>().mask ...);
+		constexpr component_mask<ComponentList::size> generateMask() {
+			return or_all(1 << mpl::IndexOf<Ts, ComponentList>::value ...);
 		}
 
 		template<typename T>
 		constexpr T &getComponent(entity_id ent) {
-			return getList<T>()[ent];
+			return getEntry<T>()[ent];
 		}
 
 		inline void removeEntity(entity_id id) {
 			auto &ent = ents.findEntity(id);
 			ent.mask = 0;
 			ent.alive = false;
+		}
+
+		inline size_t getEntityCount() {
+			return ents.getEntityCount();
 		}
 
 		inline void updateEntities() {

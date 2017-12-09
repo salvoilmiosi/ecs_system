@@ -4,7 +4,7 @@
 
 #include "components.h"
 
-static const int MAX_ENTITIES = 200;
+static const int MAX_ENTITIES = 4096;
 
 void print_func(ecs::entity_id, printable&, position&);
 void move_func(ecs::entity_id, position&, velocity&);

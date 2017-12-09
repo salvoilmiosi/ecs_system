@@ -6,9 +6,10 @@
 #include <functional>
 
 #include "entities.h"
+#include "mpl.h"
 
 namespace ecs {
-	static const size_t MAX_ENTITIES_DEFAULT = 100;
+	static const size_t MAX_ENTITIES_DEFAULT = 4096;
 
 	template<class F, class...Ts, std::size_t...Is>
 	inline void for_each_in_tuple(std::tuple<Ts...> & tuple, F func, std::index_sequence<Is...>){
@@ -31,30 +32,11 @@ namespace ecs {
 		return first | or_all(then ...);
 	}
 
-	template<typename Component, size_t CompSize, size_t Size>
-	class component_entry : public std::array<Component, Size> {
-	public:
-		const component_mask<CompSize> mask;
-
-		component_entry(size_t &n) : mask(1 << n++) {}
-	};
+	template<typename Component, size_t Size>
+	using component_entry = std::array<Component, Size>;
 
 	template<typename ... Components>
-	class component_list {
-	public:
-		static constexpr size_t size() {
-			return sizeof...(Components);
-		}
-
-		template<size_t MaxEntities>
-		using ComponentData = std::tuple<component_entry<Components, size(), MaxEntities>...>;
-
-		template<size_t MaxEntities>
-		constexpr auto createComponentData() {
-			size_t counter = 0;
-			return std::make_tuple(component_entry<Components, size(), MaxEntities>(counter)...);
-		}
-	};
+	using component_list = mpl::TypeList<Components...>;
 
 	template<typename ... Ts>
 	class system {
@@ -62,9 +44,13 @@ namespace ecs {
 		std::function<void(entity_id, Ts& ...)> func;
 
 	public:
-		system(auto func) : func(func) {}
+		system(auto _func) {
+			static_assert(std::is_assignable<decltype(func), decltype(_func)>{});
+			func = _func;
+		}
 
 		void execute(auto &world, auto &ents) {
+			static_assert(world.template areAllComponents<Ts...>());
 			static auto mask = world.template generateMask<Ts ...>();
 			for (auto &ent : ents) {
 				if ((ent.mask & mask) == mask) {

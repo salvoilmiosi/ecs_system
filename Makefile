@@ -1,6 +1,6 @@
 CXX = g++
 LD = g++
-CFLAGS = -g -Wall --std=c++17 `sdl2-config --cflags`
+CFLAGS = -g -Wall --std=c++1z `sdl2-config --cflags`
 
 LDFLAGS =
 LIBS = `sdl2-config --libs`
@@ -9,13 +9,10 @@ INCLUDE = include
 BIN_DIR = bin
 OBJ_DIR = obj
 
-MAKE = make
-
 OUT_BIN = ecs_system
 
 ifeq ($(OS),Windows_NT)
 	OUT_BIN := $(OUT_BIN).exe
-	MAKE := mingw32-make
 endif
 
 $(shell mkdir -p $(BIN_DIR) >/dev/null)

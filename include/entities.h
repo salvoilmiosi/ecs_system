@@ -68,6 +68,10 @@ namespace ecs {
 			return ent.id;
 		}
 
+		inline size_t getEntityCount() {
+			return currentSize;
+		}
+
 		void update() {
 			//moves all alive entities to the left, all dead entities to the right
 			//credit to Vittorio Romeo for the algorithm

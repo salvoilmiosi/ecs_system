@@ -1,29 +1,18 @@
 #ifndef __ENTITIES_H__
 #define __ENTITIES_H__
 
-#include <bitset>
 #include <array>
 
 namespace ecs {
 	typedef size_t entity_id;
-
-	template<size_t CompNum> using component_mask = std::bitset<CompNum>;
 	
-	template<size_t CompNum>
 	struct entity {
-		entity_id id;
-		component_mask<CompNum> mask;
-		bool alive;
-
-		entity() {
-			id = 0;
-			mask = 0;
-			alive = false;
-		}
+		entity_id id = 0;
+		bool alive = false;
 	};
 
-	template<size_t CompNum, size_t Size>
-	class entity_list : public std::array<entity<CompNum>, Size> {
+	template<size_t Size>
+	class entity_list : public std::array<entity, Size> {
 	private:
 		size_t currentSize;
 		size_t nextSize;
@@ -33,42 +22,31 @@ namespace ecs {
 			currentSize = 0;
 			nextSize = 0;
 
-			for(size_t i=0; i<Size; ++i) {
-				(*this)[i].id = i;
+			for (entity_id id = 0; id < Size; ++id) {
+				(*this)[id].id = id;
 			}
 		}
 
 	public:
-		auto end() {
-			return std::array<entity<CompNum>, Size>::begin() + currentSize;
+		auto end() const {
+			return this->begin() + currentSize;
 		}
 
-		auto &findEntity(entity_id id) {
-			for (size_t i=0; i<nextSize; ++i) {
-				auto &ent = (*this)[i];
-				if (ent.id == id) {
-					return ent;
-				}
-			}
-			throw std::out_of_range("Entity not found");
-		}
-
-		entity_id createEntity() {
+		entity& createEntity() {
 			if (nextSize >= Size) throw std::out_of_range("Out of memory");
 
 			// Update moves all dead entities to the right,
 			// so the first entity_id in nextSize should be free
 
 			auto &ent = (*this)[nextSize];
-			ent.mask = 0;
 			ent.alive = true;
 			
 			++nextSize;
 			
-			return ent.id;
+			return ent;
 		}
 
-		inline size_t getEntityCount() {
+		inline size_t getEntityCount() const {
 			return currentSize;
 		}
 

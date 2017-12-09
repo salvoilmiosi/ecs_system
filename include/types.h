@@ -32,16 +32,13 @@ namespace ecs {
 		return first | or_all(then ...);
 	}
 
-	template<typename Component, size_t Size>
-	using component_entry = std::array<Component, Size>;
-
 	template<typename ... Components>
 	using component_list = mpl::TypeList<Components...>;
 
 	template<typename ... Ts>
 	class system {
 	private:
-		std::function<void(entity_id, Ts& ...)> func;
+		std::function<void(entity&, Ts& ...)> func;
 
 	public:
 		system(auto _func) {
@@ -53,8 +50,8 @@ namespace ecs {
 			static_assert(world.template areAllComponents<Ts...>());
 			static auto mask = world.template generateMask<Ts ...>();
 			for (auto &ent : ents) {
-				if ((ent.mask & mask) == mask) {
-					func(ent.id, world.template getComponent<Ts>(ent.id) ...);
+				if ((world.getMask(ent) & mask) == mask) {
+					func(ent, world.template getComponent<Ts>(ent) ...);
 				}
 			}
 		}

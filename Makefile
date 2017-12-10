@@ -1,6 +1,6 @@
 CXX = g++
 LD = g++
-CFLAGS = -g -Wall --std=c++1z `sdl2-config --cflags`
+CFLAGS = -Wall --std=c++1z `sdl2-config --cflags`
 
 LDFLAGS =
 LIBS = `sdl2-config --libs`
@@ -8,6 +8,14 @@ LIBS = `sdl2-config --libs`
 INCLUDE = include
 BIN_DIR = bin
 OBJ_DIR = obj
+
+ifeq ($(BUILD),release)
+	CFLAGS += -O2 -s
+	OBJ_DIR = release/obj
+	BIN_DIR = release/bin
+else
+	CFLAGS += -g
+endif
 
 OUT_BIN = ecs_system
 
@@ -24,6 +32,9 @@ SOURCES = $(wildcard src/*.cpp)
 OBJECTS = $(patsubst src/%,$(OBJ_DIR)/%.o,$(basename $(SOURCES)))
 
 all: $(BIN_DIR)/$(OUT_BIN)
+
+release:
+	make "BUILD=release"
 
 clean:
 	rm -rf $(BIN_DIR)

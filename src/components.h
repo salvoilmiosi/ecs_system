@@ -65,10 +65,10 @@ struct health {
 };
 
 struct generator {
-	int particles_per_tick;
-	float scaled;
+	int particles_per_tick = 7;
 
-	generator(int ptt = 7, float scaled = 1.f) : particles_per_tick(ptt), scaled(scaled) {}
+	generator() {}
+	generator(int ptt) : particles_per_tick(ptt) {}
 };
 
 using MyComponents = ecs::component_list<

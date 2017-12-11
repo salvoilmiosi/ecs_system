@@ -58,7 +58,7 @@ inline void executeAll(auto &systems) {
 }
 
 void init() {
-	wld.createEntity(position(SCREEN_W / 2.0, SCREEN_H / 2.0), generator(20, 0.5f));
+	wld.createEntity(position(SCREEN_W / 2.0, SCREEN_H / 2.0), generator(20));
 	wld.updateEntities();
 }
 

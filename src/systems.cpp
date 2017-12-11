@@ -67,7 +67,7 @@ void particle_generator_func(ecs::entity_id, position &pos, generator &gen) {
 
 		try {
 			wld.createEntity(position_random, sprite_random, velocity_random, acceleration_random,
-				scale((rand() % 15 + 25.f) * gen.scaled), shrinking(0.983f), health(rand() % 100 + 50));
+				scale(rand() % 15 + 25.f), shrinking(0.983f), health(rand() % 100 + 50));
 			// will create on average 2000 entities
 		} catch (std::out_of_range) {
 			// out of memory

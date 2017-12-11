@@ -5,16 +5,16 @@
 
 namespace ecs {
 	typedef size_t entity_id;
-	
-	struct entity {
-		bool alive = false;
-	};
 
 	template<size_t Size>
 	class entity_list : public std::array<entity_id, Size> {
 	private:
 		size_t currentSize = 0;
 		size_t nextSize = 0;
+	
+		struct entity {
+			bool alive = false;
+		};
 
 		std::array<entity, Size> entity_data;
 

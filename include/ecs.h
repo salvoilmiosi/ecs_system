@@ -53,10 +53,12 @@ namespace ecs {
 		}
 
 		template<typename T> inline void removeComponent(entity_id ent, T component) {
+			static_assert(isComponent<T>());
 			getMask(ent) &= ~(generateMask<T>());
 		}
 
-		template<typename ... T> inline entity_id createEntity(T ... components) {
+		template<typename ... Ts> inline entity_id createEntity(Ts ... components) {
+			static_assert(areAllComponents<Ts ...>());
 			entity_id ent = ents.createEntity();
 			getMask(ent).reset();
 			addComponents(ent, components ...);

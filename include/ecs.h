@@ -39,7 +39,30 @@ namespace ecs {
 
 	template<typename ComponentList, size_t MaxEntities = MAX_ENTITIES_DEFAULT>
 	class world {
-	public:
+	private:
+		static_assert(mpl::allHaveDefaultConstructor<ComponentList>{});
+
+		template<typename T>
+		using container = std::array<T, MaxEntities>;
+
+		template<typename ... Ts>
+		using components_tuple = std::tuple<container<Ts>...>;
+
+		mpl::Rename<components_tuple, ComponentList> component_data;
+
+		typedef std::bitset<ComponentList::size> component_mask;
+		struct entity {
+			bool alive = false;
+			component_mask mask;
+		};
+
+		container<entity_id> entity_id_list;
+		container<entity> entity_list;
+
+		size_t currentSize = 0;
+		size_t nextSize = 0;
+
+	private:
 		template<typename T>
 		static constexpr bool isComponent() {
 			return mpl::Contains<T, ComponentList>{};
@@ -50,30 +73,6 @@ namespace ecs {
 			return mpl::ContainsAll<mpl::TypeList<Ts...>, ComponentList>{};
 		}
 
-	private:
-		template<typename T>
-		using container = std::array<T, MaxEntities>;
-
-		container<entity_id> entity_id_list;
-
-		typedef std::bitset<ComponentList::size> component_mask;
-		struct entity {
-			bool alive = false;
-			component_mask mask;
-		};
-
-		container<entity> entity_list;
-
-		template<typename ... Ts>
-		using components_tuple = std::tuple<container<Ts>...>;
-
-		static_assert(mpl::allHaveDefaultConstructor<ComponentList>{});
-		mpl::Rename<components_tuple, ComponentList> component_data;
-
-	private:
-		size_t currentSize = 0;
-		size_t nextSize = 0;
-
 	public:
 		world() {
 			for (entity_id i=0; i<entity_id_list.size(); ++i) {
@@ -82,6 +81,18 @@ namespace ecs {
 		}
 
 	public:
+		template<typename ... Ts>
+		constexpr component_mask generateMask() {
+			static_assert(areAllComponents<Ts ...>());
+			return or_all(component_mask(1) << mpl::IndexOf<Ts, ComponentList>::value ...);
+		}
+
+		template<typename T>
+		constexpr T &getComponent(entity_id ent) {
+			static_assert(isComponent<T>());
+			return std::get<container<T>>(component_data)[ent];
+		}
+
 		void addComponents(entity_id ent) {}
 
 		template<typename T> void addComponent(entity_id ent, T component) {
@@ -96,6 +107,11 @@ namespace ecs {
 			addComponents(ent, components ...);
 		}
 
+		template<typename T> void removeComponent(entity_id ent, T component) {
+			static_assert(isComponent<T>());
+			entity_list[ent].mask &= ~(generateMask<T>());
+		}
+
 		bool entityMatches(entity_id ent, component_mask mask) {
 			return (entity_list[ent].mask & mask) == mask;
 		}
@@ -103,11 +119,6 @@ namespace ecs {
 		template<typename ... Ts> bool hasComponents(entity_id ent) {
 			static_assert(areAllComponents<Ts ...>());
 			return entityMatches(ent, generateMask<Ts...>());
-		}
-
-		template<typename T> void removeComponent(entity_id ent, T component) {
-			static_assert(isComponent<T>());
-			entity_list[ent].mask &= ~(generateMask<T>());
 		}
 
 		template<typename ... Ts> entity_id createEntity(Ts ... components) {
@@ -126,17 +137,6 @@ namespace ecs {
 
 			addComponents(ent, components ...);
 			return ent;
-		}
-		
-		template<typename ... Ts>
-		constexpr auto generateMask() {
-			static_assert(areAllComponents<Ts ...>());
-			return or_all(component_mask(1) << mpl::IndexOf<Ts, ComponentList>::value ...);
-		}
-
-		template<typename T>
-		constexpr T &getComponent(entity_id ent) {
-			return std::get<container<T>>(component_data)[ent];
 		}
 
 		void removeEntity(entity_id ent) {
@@ -191,9 +191,8 @@ namespace ecs {
 		}
 
 		void execute(auto &world) {
-			static_assert(world.template areAllComponents<Ts...>());
-			auto mask = world.template generateMask<Ts ...>();
-			world.forEachEntity([this, &world, mask](entity_id ent){
+			static auto mask = world.template generateMask<Ts ...>();
+			world.forEachEntity([this, &world](entity_id ent){
 				if (world.entityMatches(ent, mask)) {
 					func(ent, world.template getComponent<Ts>(ent) ...);
 				}

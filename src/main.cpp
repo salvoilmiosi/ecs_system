@@ -53,7 +53,7 @@ void cleanUp() {
 
 inline void executeAll(auto &systems) {
 	for_each_in_tuple(systems, [](auto &x){
-		wld.executeSystem(x);
+		x.execute(wld);
 	});
 }
 

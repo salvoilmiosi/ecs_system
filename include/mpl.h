@@ -26,12 +26,6 @@ namespace mpl {
 		static constexpr std::size_t size{sizeof...(Ts)};
 	};
 
-	// Count base case: 0.
-	template <typename T, typename TTypeList>
-	struct CountHelper : std::integral_constant<std::size_t, 0>
-	{
-	};
-
 	template <typename, typename>
 	struct IndexOf;
 
@@ -50,6 +44,12 @@ namespace mpl {
 	{
 	};
 
+	// Count base case: 0.
+	template <typename T, typename TTypeList>
+	struct CountHelper : std::integral_constant<std::size_t, 0>
+	{
+	};
+	
 	// Interface type alias.
 	template <typename T, typename TTypeList>
 	using Count = CountHelper<T, TTypeList>;

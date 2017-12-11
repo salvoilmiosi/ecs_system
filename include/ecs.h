@@ -61,6 +61,7 @@ namespace ecs {
 
 		size_t currentSize = 0;
 		size_t nextSize = 0;
+		size_t maxSize = 0;
 
 	private:
 		template<typename T>
@@ -71,13 +72,6 @@ namespace ecs {
 		template<typename ... Ts>
 		static constexpr bool areAllComponents() {
 			return mpl::ContainsAll<mpl::TypeList<Ts...>, ComponentList>{};
-		}
-
-	public:
-		world() {
-			for (entity_id i=0; i<entity_id_list.size(); ++i) {
-				entity_id_list[i] = i;
-			}
 		}
 
 	public:
@@ -133,6 +127,11 @@ namespace ecs {
 
 			// Update moves all dead entities to the right,
 			// so the first entity_id in nextSize should be free
+
+			if (nextSize >= maxSize) {
+				entity_id_list[nextSize] = nextSize;
+				++maxSize;
+			}
 
 			entity_id ent = entity_id_list[nextSize];
 			entity_list[ent].alive = true;

@@ -7,20 +7,21 @@ namespace ecs {
 	typedef size_t entity_id;
 	
 	struct entity {
-		entity_id id = 0;
 		bool alive = false;
 	};
 
 	template<size_t Size>
-	class entity_list : public std::array<entity, Size> {
+	class entity_list : public std::array<entity_id, Size> {
 	private:
 		size_t currentSize = 0;
 		size_t nextSize = 0;
 
+		std::array<entity, Size> entity_data;
+
 	public:
 		entity_list() {
 			for (entity_id id = 0; id < Size; ++id) {
-				(*this)[id].id = id;
+				(*this)[id] = id;
 			}
 		}
 
@@ -29,18 +30,22 @@ namespace ecs {
 			return this->begin() + currentSize;
 		}
 
-		entity& createEntity() {
+		entity_id createEntity() {
 			if (nextSize >= Size) throw std::out_of_range("Out of memory");
 
 			// Update moves all dead entities to the right,
 			// so the first entity_id in nextSize should be free
 
-			auto &ent = (*this)[nextSize];
-			ent.alive = true;
+			entity_id ent = (*this)[nextSize];
+			entity_data[ent].alive = true;
 			
 			++nextSize;
 			
 			return ent;
+		}
+
+		void removeEntity(entity_id ent) {
+			entity_data[ent].alive = false;
 		}
 
 		inline size_t getEntityCount() const {
@@ -55,10 +60,10 @@ namespace ecs {
 			while(true) {
 				for (; true; ++iD) {
 					if (iD > iA) goto end_of_loop;
-					if (!(*this)[iD].alive) break;
+					if (!entity_data[(*this)[iD]].alive) break;
 				}
 				for (; true; --iA) {
-					if ((*this)[iA].alive) break;
+					if (entity_data[(*this)[iA]].alive) break;
 					if (iA <= iD) goto end_of_loop;
 				}
 				std::swap((*this)[iA], (*this)[iD]);

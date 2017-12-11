@@ -38,7 +38,7 @@ namespace ecs {
 	template<typename ... Ts>
 	class system {
 	private:
-		std::function<void(entity&, Ts& ...)> func;
+		std::function<void(entity_id, Ts& ...)> func;
 
 	public:
 		system(auto _func) {
@@ -49,7 +49,7 @@ namespace ecs {
 		void execute(auto &world, auto &ents) {
 			static_assert(world.template areAllComponents<Ts...>());
 			static auto mask = world.template generateMask<Ts ...>();
-			for (auto &ent : ents) {
+			for (entity_id ent : ents) {
 				if ((world.getMask(ent) & mask) == mask) {
 					func(ent, world.template getComponent<Ts>(ent) ...);
 				}

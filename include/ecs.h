@@ -20,55 +20,47 @@ namespace ecs {
 		}
 
 	private:
-		template<typename Component, size_t Size>
-		using component_entry = std::array<Component, Size>;
-
 		template<typename ... Ts>
-		using component_data = std::tuple<component_entry<Ts, MaxEntities>...>;
+		using components_tuple = std::tuple<std::array<Ts, MaxEntities>...>;
 
 		typedef std::bitset<ComponentList::size> component_mask;
 
-		mpl::Rename<component_data, ComponentList> data;
+		mpl::Rename<components_tuple, ComponentList> component_data;
 
 		entity_list<MaxEntities> ents;
 
 		std::array<component_mask, MaxEntities> mask_list;
 
 	public:
-		template<typename T> void addComponent(entity& ent, T component) {
+		void addComponents(entity_id ent) {}
+
+		template<typename T> void addComponent(entity_id ent, T component) {
 			static_assert(isComponent<T>());
 			// trova la lista di componenti di T e aggiunge component
 			getComponent<T>(ent) = component;
 			getMask(ent) |= generateMask<T>();
 		}
 
-		void addComponents(entity& ent) {}
-
-		template<typename T, typename ... Ts> inline void addComponents(entity& ent, T first, Ts ... components) {
+		template<typename T, typename ... Ts> inline void addComponents(entity_id ent, T first, Ts ... components) {
 			addComponent(ent, first);
 			addComponents(ent, components ...);
 		}
 
-		template<typename T> inline bool hasComponent(entity& ent) {
+		template<typename T> inline bool hasComponent(entity_id ent) {
 			static_assert(isComponent<T>());
-			auto &cl = getEntry<T>();
-			return getMask(ent) & cl.mask == cl.mask;
+			constexpr component_mask c_mask = generateMask<T>();
+			return getMask(ent) & c_mask == c_mask;
 		}
 
-		template<typename T> inline void removeComponent(entity& ent, T component) {
+		template<typename T> inline void removeComponent(entity_id ent, T component) {
 			getMask(ent) &= ~(generateMask<T>());
 		}
 
-		template<typename ... T> inline entity& createEntity(T ... components) {
-			entity& ent = ents.createEntity();
-			getMask(ent) = 0;
+		template<typename ... T> inline entity_id createEntity(T ... components) {
+			entity_id ent = ents.createEntity();
+			getMask(ent).reset();
 			addComponents(ent, components ...);
 			return ent;
-		}
-
-		template<typename T>
-		constexpr auto &getEntry() {
-			return std::get<component_entry<T, MaxEntities>>(data);
 		}
 		
 		template<typename ... Ts>
@@ -77,18 +69,18 @@ namespace ecs {
 			return or_all(component_mask(1) << mpl::IndexOf<Ts, ComponentList>::value ...);
 		}
 
-		auto &getMask(entity& ent) {
-			return mask_list[ent.id];
+		component_mask &getMask(entity_id ent) {
+			return mask_list[ent];
 		}
 
 		template<typename T>
-		constexpr T &getComponent(entity& ent) {
-			return getEntry<T>()[ent.id];
+		constexpr T &getComponent(entity_id ent) {
+			return std::get<std::array<T, MaxEntities>>(component_data)[ent];
 		}
 
-		inline void removeEntity(entity& ent) {
-			getMask(ent) = 0;
-			ent.alive = false;
+		inline void removeEntity(entity_id ent) {
+			getMask(ent).reset();
+			ents.removeEntity(ent);
 		}
 
 		inline void updateEntities() {

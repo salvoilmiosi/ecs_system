@@ -31,9 +31,9 @@ constexpr T or_all(const T &first, const Ts& ... then) {
 }
 
 namespace ecs {
-	typedef size_t entity_id;
-
 	static const size_t MAX_ENTITIES_DEFAULT = 4096;
+
+	typedef size_t entity_id;
 
 	template<typename ... Components>
 	using component_list = mpl::TypeList<Components...>;

@@ -87,6 +87,20 @@ namespace mpl {
 	struct ContainsAllHelper<TypeList<>, TTypeList> : std::true_type
 	{
 	};
+
+	template <typename TTypeList>
+	struct allHaveDefaultConstructor {};
+
+	template<>
+	struct allHaveDefaultConstructor<TypeList<>> : std::true_type {};
+
+	template<typename T, typename ... Ts>
+	struct allHaveDefaultConstructor<TypeList<T, Ts...>>
+		: std::integral_constant<bool,
+			std::is_default_constructible<T>{} &&
+				allHaveDefaultConstructor<TypeList<Ts...>>{}>
+	{
+	};
 }
 
 #endif // __MPL_H__

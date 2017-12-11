@@ -25,6 +25,7 @@ namespace ecs {
 
 		typedef std::bitset<ComponentList::size> component_mask;
 
+		static_assert(mpl::allHaveDefaultConstructor<ComponentList>{});
 		mpl::Rename<components_tuple, ComponentList> component_data;
 
 		entity_list<MaxEntities> ents;

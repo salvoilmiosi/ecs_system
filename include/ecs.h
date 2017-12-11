@@ -95,36 +95,41 @@ namespace ecs {
 
 		void addComponents(entity_id ent) {}
 
-		template<typename T> void addComponent(entity_id ent, T component) {
+		template<typename T>
+		void addComponent(entity_id ent, T component) {
 			static_assert(isComponent<T>());
 			// trova la lista di componenti di T e aggiunge component
 			getComponent<T>(ent) = component;
 			entity_list[ent].mask |= generateMask<T>();
 		}
 
-		template<typename T, typename ... Ts> void addComponents(entity_id ent, T first, Ts ... components) {
+		template<typename T, typename ... Ts>
+		void addComponents(entity_id ent, T first, Ts ... components) {
 			addComponent(ent, first);
 			addComponents(ent, components ...);
 		}
 
-		template<typename T> void removeComponent(entity_id ent, T component) {
+		template<typename T>
+		void removeComponent(entity_id ent) {
 			static_assert(isComponent<T>());
 			entity_list[ent].mask &= ~(generateMask<T>());
 		}
 
-		bool entityMatches(entity_id ent, component_mask mask) {
+		bool entityMatches(entity_id ent, const component_mask &mask) {
 			return (entity_list[ent].mask & mask) == mask;
 		}
 
-		template<typename ... Ts> bool hasComponents(entity_id ent) {
+		template<typename ... Ts>
+		bool hasComponents(entity_id ent) {
 			static_assert(areAllComponents<Ts ...>());
 			return entityMatches(ent, generateMask<Ts...>());
 		}
 
-		template<typename ... Ts> entity_id createEntity(Ts ... components) {
+		template<typename ... Ts>
+		entity_id createEntity(Ts ... components) {
 			static_assert(areAllComponents<Ts ...>());
 
-			if (nextSize >= MaxEntities) throw std::out_of_range("Out of memory");
+			if (nextSize >= entity_list.size()) throw std::out_of_range("Out of memory");
 
 			// Update moves all dead entities to the right,
 			// so the first entity_id in nextSize should be free

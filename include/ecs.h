@@ -2,11 +2,12 @@
 #define __ECS_H__
 
 #include "mpl.h"
+#include "growing_array.h"
 
 #include <tuple>
-#include <array>
 #include <bitset>
 #include <functional>
+#include <iostream>
 
 template<class F, class...Ts, std::size_t...Is>
 inline void for_each_in_tuple(std::tuple<Ts...> & tuple, F func, std::index_sequence<Is...>){
@@ -30,9 +31,9 @@ constexpr T or_all(const T &first, const Ts& ... then) {
 }
 
 namespace ecs {
-	static const size_t MAX_ENTITIES_DEFAULT = 4096;
-	
 	typedef size_t entity_id;
+
+	static const size_t MAX_ENTITIES_DEFAULT = 4096;
 
 	template<typename ... Components>
 	using component_list = mpl::TypeList<Components...>;
@@ -43,7 +44,7 @@ namespace ecs {
 		static_assert(mpl::allHaveDefaultConstructor<ComponentList>{});
 
 		template<typename T>
-		using container = std::array<T, MaxEntities>;
+		using container = growing_array<T>;
 
 		template<typename ... Ts>
 		using components_tuple = std::tuple<container<Ts>...>;
@@ -122,8 +123,6 @@ namespace ecs {
 		template<typename ... Ts>
 		entity_id createEntity(Ts ... components) {
 			static_assert(areAllComponents<Ts ...>());
-
-			if (nextSize >= entity_list.size()) throw std::out_of_range("Out of memory");
 
 			// Update moves all dead entities to the right,
 			// so the first entity_id in nextSize should be free

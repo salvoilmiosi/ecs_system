@@ -1,11 +1,33 @@
 #ifndef __ECS_H__
 #define __ECS_H__
 
-#include "util.h"
+#include "mpl.h"
 
-#include <bitset>
+#include <tuple>
 #include <array>
+#include <bitset>
 #include <functional>
+
+template<class F, class...Ts, std::size_t...Is>
+inline void for_each_in_tuple(std::tuple<Ts...> & tuple, F func, std::index_sequence<Is...>){
+	using expander = int[];
+	(void)expander { 0, ((void)func(std::get<Is>(tuple)), 0)... };
+}
+
+template<class F, class...Ts>
+inline void for_each_in_tuple(std::tuple<Ts...> & tuple, F func){
+	for_each_in_tuple(tuple, func, std::make_index_sequence<sizeof...(Ts)>());
+}
+
+template<typename T>
+constexpr T or_all(const T &obj) {
+	return obj;
+}
+
+template<typename T, typename ... Ts>
+constexpr T or_all(const T &first, const Ts& ... then) {
+	return first | or_all(then ...);
+}
 
 namespace ecs {
 	static const size_t MAX_ENTITIES_DEFAULT = 4096;
@@ -69,7 +91,7 @@ namespace ecs {
 			entity_list[ent].mask |= generateMask<T>();
 		}
 
-		template<typename T, typename ... Ts> inline void addComponents(entity_id ent, T first, Ts ... components) {
+		template<typename T, typename ... Ts> void addComponents(entity_id ent, T first, Ts ... components) {
 			addComponent(ent, first);
 			addComponents(ent, components ...);
 		}
@@ -78,17 +100,17 @@ namespace ecs {
 			return (entity_list[ent].mask & mask) == mask;
 		}
 
-		template<typename ... Ts> inline bool hasComponents(entity_id ent) {
+		template<typename ... Ts> bool hasComponents(entity_id ent) {
 			static_assert(areAllComponents<Ts ...>());
 			return entityMatches(ent, generateMask<Ts...>());
 		}
 
-		template<typename T> inline void removeComponent(entity_id ent, T component) {
+		template<typename T> void removeComponent(entity_id ent, T component) {
 			static_assert(isComponent<T>());
 			entity_list[ent].mask &= ~(generateMask<T>());
 		}
 
-		template<typename ... Ts> inline entity_id createEntity(Ts ... components) {
+		template<typename ... Ts> entity_id createEntity(Ts ... components) {
 			static_assert(areAllComponents<Ts ...>());
 
 			if (nextSize >= MaxEntities) throw std::out_of_range("Out of memory");
@@ -117,7 +139,7 @@ namespace ecs {
 			return std::get<container<T>>(component_data)[ent];
 		}
 
-		inline void removeEntity(entity_id ent) {
+		void removeEntity(entity_id ent) {
 			entity_list[ent].alive = false;
 			entity_list[ent].mask.reset();
 		}
@@ -132,7 +154,7 @@ namespace ecs {
 			}
 		}
 
-		inline void updateEntities() {
+		void updateEntities() {
 			//moves all alive entities to the left, all dead entities to the right
 			//credit to Vittorio Romeo for the algorithm
 			size_t iD = 0, iA = nextSize - 1;

@@ -7,7 +7,6 @@
 #include <tuple>
 #include <bitset>
 #include <functional>
-#include <iostream>
 
 template<class F, class...Ts, std::size_t...Is>
 inline void for_each_in_tuple(std::tuple<Ts...> & tuple, F func, std::index_sequence<Is...>){
@@ -44,7 +43,7 @@ namespace ecs {
 		static_assert(mpl::allHaveDefaultConstructor<ComponentList>{});
 
 		template<typename T>
-		using container = growing_array<T>;
+		using container = growing_array<T, MaxEntities>;
 
 		template<typename ... Ts>
 		using components_tuple = std::tuple<container<Ts>...>;

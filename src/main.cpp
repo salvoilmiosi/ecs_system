@@ -14,6 +14,8 @@ SDL_Renderer *renderer;
 
 ecs::world<MyComponents, MAX_ENTITIES> wld;
 
+namespace {
+
 auto on_tick_systems = std::make_tuple(
 	ecs::system<position, generator>(particle_generator_func),
 	ecs::system<printable, position>(print_func),
@@ -52,7 +54,7 @@ void cleanUp() {
 }
 
 inline void executeAll(auto &systems) {
-	for_each_in_tuple(systems, [](auto &x){
+	for_each_in_tuple(systems, [](auto &x) {
 		x.execute(wld);
 	});
 }
@@ -70,7 +72,9 @@ void tick() {
 void render() {
 	executeAll(on_draw_systems);
 	SDL_RenderPresent(renderer);
-}	
+}
+
+}
 
 int main (int argc, char** argv) {
 	if (!initSDL()) return 1;

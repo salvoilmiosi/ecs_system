@@ -188,24 +188,25 @@ namespace ecs {
 
 	template<typename ... Ts>
 	class system {
-	public:
-		system(auto _func) {
-			static_assert(std::is_assignable<decltype(func), decltype(_func)>{});
-			func = _func;
-		}
-
-		void execute(auto &world) {
-			static auto mask = world.template generateMask<Ts ...>();
-			world.forEachEntity([this, &world](entity_id ent){
-				if (world.entityMatches(ent, mask)) {
-					func(ent, world.template getComponent<Ts>(ent) ...);
-				}
-			});
-		}
-
 	private:
 		std::function<void(entity_id, Ts& ...)> func;
+
+	public:
+		system(decltype(func) func) : func(func) {}
+
+		template<typename ComponentList, size_t MaxEntities>
+		void execute(world<ComponentList, MaxEntities> &wld);
 	};
+
+	template<typename ... Ts> template<typename ComponentList, size_t MaxEntities>
+	void system<Ts...>::execute(world<ComponentList, MaxEntities> &wld) {
+		static auto mask = wld.template generateMask<Ts ...>();
+		wld.forEachEntity([this, &wld](entity_id ent){
+			if (wld.entityMatches(ent, mask)) {
+				func(ent, wld.template getComponent<Ts>(ent) ...);
+			}
+		});
+	}
 }
 
 #endif //__ECS_H__

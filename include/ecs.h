@@ -39,9 +39,9 @@ namespace ecs {
 
 	template<typename ComponentList, size_t MaxEntities = MAX_ENTITIES_DEFAULT>
 	class world {
-	private:
 		static_assert(mpl::allHaveDefaultConstructor<ComponentList>{});
 
+	private:
 		template<typename T>
 		using container = growing_array<T, MaxEntities>;
 
@@ -63,7 +63,6 @@ namespace ecs {
 		size_t nextSize = 0;
 		size_t maxSize = 0;
 
-	private:
 		template<typename T>
 		static constexpr bool isComponent() {
 			return mpl::Contains<T, ComponentList>{};
@@ -120,26 +119,7 @@ namespace ecs {
 		}
 
 		template<typename ... Ts>
-		entity_id createEntity(Ts ... components) {
-			static_assert(areAllComponents<Ts ...>());
-
-			// Update moves all dead entities to the right,
-			// so the first entity_id in nextSize should be free
-
-			if (nextSize >= maxSize) {
-				entity_id_list[nextSize] = nextSize;
-				++maxSize;
-			}
-
-			entity_id ent = entity_id_list[nextSize];
-			entity_list[ent].alive = true;
-			entity_list[ent].mask.reset();
-			
-			++nextSize;
-
-			addComponents(ent, components ...);
-			return ent;
-		}
+		entity_id createEntity(Ts ... components);
 
 		void removeEntity(entity_id ent) {
 			entity_list[ent].alive = false;
@@ -156,36 +136,58 @@ namespace ecs {
 			}
 		}
 
-		void updateEntities() {
-			//moves all alive entities to the left, all dead entities to the right
-			//credit to Vittorio Romeo for the algorithm
-			size_t iD = 0, iA = nextSize - 1;
-
-			while(true) {
-				for (; true; ++iD) {
-					if (iD > iA) goto end_of_loop;
-					if (!entity_list[entity_id_list[iD]].alive) break;
-				}
-				for (; true; --iA) {
-					if (entity_list[entity_id_list[iA]].alive) break;
-					if (iA <= iD) goto end_of_loop;
-				}
-				std::swap(entity_id_list[iA], entity_id_list[iD]);
-
-				++iD;
-				--iA;
-			}
-
-			end_of_loop:
-			currentSize = nextSize = iD;
-		}
+		void updateEntities();
 	};
+
+	template<typename ComponentList, size_t MaxEntities> template<typename ... Ts>
+	entity_id world<ComponentList, MaxEntities>::createEntity(Ts ... components) {
+		static_assert(areAllComponents<Ts ...>());
+
+		// Update moves all dead entities to the right,
+		// so the first entity_id in nextSize should be free
+
+		if (nextSize >= maxSize) {
+			entity_id_list[nextSize] = nextSize;
+			++maxSize;
+		}
+
+		entity_id ent = entity_id_list[nextSize];
+		entity_list[ent].alive = true;
+		entity_list[ent].mask.reset();
+		
+		++nextSize;
+
+		addComponents(ent, components ...);
+		return ent;
+	}
+	
+	template<typename ComponentList, size_t MaxEntities>
+	void world<ComponentList, MaxEntities>::updateEntities() {
+		//moves all alive entities to the left, all dead entities to the right
+		//credit to Vittorio Romeo for the algorithm
+		size_t iD = 0, iA = nextSize - 1;
+
+		while(true) {
+			for (; true; ++iD) {
+				if (iD > iA) goto end_of_loop;
+				if (!entity_list[entity_id_list[iD]].alive) break;
+			}
+			for (; true; --iA) {
+				if (entity_list[entity_id_list[iA]].alive) break;
+				if (iA <= iD) goto end_of_loop;
+			}
+			std::swap(entity_id_list[iA], entity_id_list[iD]);
+
+			++iD;
+			--iA;
+		}
+
+		end_of_loop:
+		currentSize = nextSize = iD;
+	}
 
 	template<typename ... Ts>
 	class system {
-	private:
-		std::function<void(entity_id, Ts& ...)> func;
-
 	public:
 		system(auto _func) {
 			static_assert(std::is_assignable<decltype(func), decltype(_func)>{});
@@ -200,6 +202,9 @@ namespace ecs {
 				}
 			});
 		}
+
+	private:
+		std::function<void(entity_id, Ts& ...)> func;
 	};
 }
 

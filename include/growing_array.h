@@ -13,7 +13,6 @@ public:
 		std::vector<T>::reserve(ReservedSize);
 	}
 
-public:
 	T &operator[](size_t i) {
 		size_t oldSize = std::vector<T>::size();
 		if (i >= oldSize) {

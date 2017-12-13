@@ -31,14 +31,8 @@ DEPFLAGS = -MT $@ -MMD -MP -MF $(OBJ_DIR)/$*.Td
 SOURCES = $(wildcard src/*.cpp)
 OBJECTS = $(patsubst src/%,$(OBJ_DIR)/%.o,$(basename $(SOURCES)))
 
+debug: all
 all: $(BIN_DIR)/$(OUT_BIN)
-
-release:
-	make "BUILD=release"
-
-clean:
-	rm -rf $(BIN_DIR)
-	rm -rf $(OBJ_DIR)
 
 $(BIN_DIR)/$(OUT_BIN): $(OBJECTS)
 	$(LD) -o $(BIN_DIR)/$(OUT_BIN) $(OBJECTS) $(LDFLAGS) $(LIBS)
@@ -52,3 +46,21 @@ $(OBJ_DIR)/%.d: ;
 .PRECIOUS: $(OBJ_DIR)/%.d
 
 -include $(patsubst src/%,$(OBJ_DIR)/%.d,$(basename $(SOURCES)))
+
+release:
+	make "BUILD=release"
+
+clean:
+	rm -f $(OBJ_DIR)/*.o
+	rm -f $(OBJ_DIR)/*.d
+	rm -f $(BIN_DIR)/$(OUT_BIN)
+	rmdir $(OBJ_DIR)
+	rmdir $(BIN_DIR)
+
+clean_debug: clean
+
+clean_release:
+	make "BUILD=release" clean
+	rmdir release
+
+.PHONY: debug release clean clean_release

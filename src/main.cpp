@@ -16,17 +16,6 @@ ecs::world<MyComponents, MAX_ENTITIES> wld;
 
 namespace {
 
-template<class F, class...Ts, std::size_t...Is>
-inline void for_each_in_tuple(std::tuple<Ts...> & tuple, F func, std::index_sequence<Is...>){
-	using expander = int[];
-	(void)expander { 0, ((void)func(std::get<Is>(tuple)), 0)... };
-}
-
-template<class F, class...Ts>
-inline void for_each_in_tuple(std::tuple<Ts...> & tuple, F func){
-	for_each_in_tuple(tuple, func, std::make_index_sequence<sizeof...(Ts)>());
-}
-
 auto on_tick_systems = std::make_tuple(
 	ecs::system<position, generator>(particle_generator_func),
 	ecs::system<printable, position>(print_func),
@@ -65,7 +54,7 @@ void cleanUp() {
 }
 
 inline void executeAll(auto &systems) {
-	for_each_in_tuple(systems, [](auto &x) {
+	mpl::for_each_in_tuple(systems, [](auto &x) {
 		x.execute(wld);
 	});
 }

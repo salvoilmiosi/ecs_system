@@ -13,13 +13,8 @@ public:
 		std::vector<T>::reserve(ReservedSize);
 	}
 
-	T &operator[](size_t i) {
-		size_t oldSize = std::vector<T>::size();
-		if (i >= oldSize) {
-			size_t newSize = oldSize + BUFFER_SIZE;
-			std::vector<T>::resize(newSize);
-		}
-		return std::vector<T>::operator[](i);
+	void grow() {
+		std::vector<T>::resize(std::vector<T>::size() + BUFFER_SIZE);
 	}
 };
 

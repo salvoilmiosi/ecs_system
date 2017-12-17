@@ -4,7 +4,6 @@
 #include "mpl.h"
 #include "growing_array.h"
 
-#include <tuple>
 #include <bitset>
 #include <functional>
 
@@ -23,7 +22,7 @@ class world {
 
 private:
 	template<typename T>
-	using container = growing_array<T, MaxEntities>;
+	using container = growing_array<T>;
 
 	template<typename ... Ts>
 	using components_tuple = std::tuple<container<Ts>...>;
@@ -42,6 +41,7 @@ private:
 	size_t currentSize = 0;
 	size_t nextSize = 0;
 	size_t maxSize = 0;
+	size_t capacity = 0;
 
 	template<typename T>
 	static constexpr bool isComponent() {
@@ -62,6 +62,8 @@ private:
 	constexpr T or_all(const T &first, const Ts& ... then) {
 		return first | or_all(then ...);
 	}
+
+	void growContainers();
 
 public:
 	template<typename ... Ts>
@@ -129,9 +131,25 @@ public:
 	void updateEntities();
 };
 
+template<typename ComponentList, size_t MaxEntities>
+void world<ComponentList, MaxEntities>::growContainers() {
+	entity_id_list.grow();
+	entity_list.grow();
+
+	mpl::for_each_in_tuple(component_data, [](auto &x){
+		x.grow();
+	});
+
+	capacity = entity_id_list.size();
+}
+
 template<typename ComponentList, size_t MaxEntities> template<typename ... Ts>
 entity_id world<ComponentList, MaxEntities>::createEntity(Ts ... components) {
 	static_assert(areAllComponents<Ts ...>());
+
+	if (nextSize >= capacity) {
+		growContainers();
+	}
 
 	// Update moves all dead entities to the right,
 	// so the first entity_id in nextSize should be free

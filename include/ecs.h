@@ -4,6 +4,8 @@
 #include "mpl.h"
 #include "growing_array.h"
 
+#include "edit_logger.h"
+
 #include <bitset>
 #include <functional>
 
@@ -38,6 +40,8 @@ private:
 	container<entity_id> entity_id_list;
 	container<entity> entity_list;
 
+	edit_logger<ComponentList> logger;
+
 	size_t currentSize = 0;
 	size_t nextSize = 0;
 	size_t maxSize = 0;
@@ -64,6 +68,15 @@ private:
 	}
 
 	void growContainers();
+
+	template<size_t ... Is>
+	constexpr auto singleEntityComponents(entity_id ent, std::index_sequence<Is ...>) {
+		return std::make_tuple(std::get<Is>(component_data)[ent] ...);
+	}
+
+	constexpr auto singleEntityComponents(entity_id ent) {
+		return singleEntityComponents(ent, std::make_index_sequence<ComponentList::size>());
+	}
 
 public:
 	template<typename ... Ts>
@@ -129,6 +142,8 @@ public:
 	}
 
 	void updateEntities();
+
+	void logEntities(std::ostream &out);
 };
 
 template<typename ComponentList, size_t MaxEntities>
@@ -192,6 +207,21 @@ void world<ComponentList, MaxEntities>::updateEntities() {
 
 	end_of_loop:
 	currentSize = nextSize = iD;
+}
+
+template<typename ComponentList, size_t MaxEntities>
+void world<ComponentList, MaxEntities>::logEntities(std::ostream &out) {
+	forEachEntity([this](entity_id id) {
+		auto edit = logger.create();
+		edit.type = EDIT_STATE;
+		edit.id = id;
+		edit.mask = entity_list[id].mask;
+		edit.data = singleEntityComponents(id);
+
+		logger.add(edit);
+	});
+
+	logger.flush(out);
 }
 
 template<typename ... Ts>

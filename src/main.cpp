@@ -1,4 +1,5 @@
 #include <SDL2/SDL.h>
+#include <fstream>
 
 #include "ecs.h"
 
@@ -74,6 +75,11 @@ void render() {
 	SDL_RenderPresent(renderer);
 }
 
+void clickedMouse() {
+	std::ofstream out_file("data", std::ios::out | std::ios::binary);
+	wld.logEntities(out_file);
+}
+
 }
 
 int main (int argc, char** argv) {
@@ -95,6 +101,9 @@ int main (int argc, char** argv) {
 			switch (event.type) {
 			case SDL_QUIT:
 				quit = true;
+				break;
+			case SDL_MOUSEBUTTONDOWN:
+				clickedMouse();
 				break;
 			default:
 				break;

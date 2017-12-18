@@ -1,8 +1,8 @@
 #include "systems.h"
 
-#include <cstdlib>
-
 #include "main.h"
+
+#include <cstdlib>
 
 void print_func(ecs::entity_id me, printable &p, position &pos) {
 	std::cout << "Entity " << p.name << "(" << me << "), Position (" << pos.x << ", " << pos.y << ")" << std::endl;

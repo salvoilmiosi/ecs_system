@@ -7,7 +7,7 @@
 #include "ecs.h"
 #include "components.h"
 
-namespace client {
+namespace server {
 
 static const int SCREEN_W = 1024;
 static const int SCREEN_H = 768;

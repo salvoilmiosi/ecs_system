@@ -1,23 +1,16 @@
-#include <SDL2/SDL.h>
-#include <fstream>
-
-#include "ecs.h"
+#include "main.h"
 
 #include "systems.h"
 
-static const int SCREEN_W = 1024;
-static const int SCREEN_H = 768;
-static const int FPS = 60;
+namespace server {
 
-static SDL_Window *window;
+SDL_Window *window;
 
 SDL_Renderer *renderer;
 
 ecs::world<MyComponents, MAX_ENTITIES> wld;
 
-namespace {
-
-auto on_tick_systems = std::make_tuple(
+static auto on_tick_systems = std::make_tuple(
 	ecs::system<position, generator>(particle_generator_func),
 	ecs::system<printable, position>(print_func),
 	ecs::system<position, velocity>(move_func),
@@ -26,11 +19,11 @@ auto on_tick_systems = std::make_tuple(
 	ecs::system<health>(health_tick_func)
 );
 
-auto on_draw_systems = std::make_tuple(
+static auto on_draw_systems = std::make_tuple(
 	ecs::system<sprite, position, scale>(draw_func)
 );
 
-bool initSDL() {
+static bool initSDL() {
 	if (SDL_Init(SDL_INIT_EVERYTHING) == -1)
 		return false;
 
@@ -49,28 +42,28 @@ bool initSDL() {
 	return true;
 }
 
-void cleanUp() {
+static void cleanUp() {
 	SDL_DestroyRenderer(renderer);
 	SDL_Quit();
 }
 
-inline void executeAll(auto &systems) {
+static inline void executeAll(auto &systems) {
 	mpl::for_each_in_tuple(systems, [](auto &x) {
 		x.execute(wld);
 	});
 }
 
-void init() {
+static void init() {
 	wld.createEntity(position(SCREEN_W / 2.0, SCREEN_H / 2.0), generator(20));
 	wld.updateEntities();
 }
 
-void tick() {
+static void tick() {
 	executeAll(on_tick_systems);
 	wld.updateEntities();
 }
 
-void render() {
+static void render() {
 	executeAll(on_draw_systems);
 	SDL_RenderPresent(renderer);
 }
@@ -78,19 +71,19 @@ void render() {
 }
 
 int main (int argc, char** argv) {
-	if (!initSDL()) return 1;
+	if (!server::initSDL()) return 1;
 
 	SDL_Event event;
 
-	init();
+	server::init();
 
 	bool quit = false;
 	while(!quit) {
-		SDL_SetRenderDrawColor(renderer, 0x0, 0x0, 0x0, 0xff);
-		SDL_RenderClear(renderer);
+		SDL_SetRenderDrawColor(server::renderer, 0x0, 0x0, 0x0, 0xff);
+		SDL_RenderClear(server::renderer);
 
-		tick();
-		render();
+		server::tick();
+		server::render();
 
 		while (SDL_PollEvent(&event)) {
 			switch (event.type) {
@@ -102,9 +95,9 @@ int main (int argc, char** argv) {
 			}
 		}
 
-		SDL_Delay(1000 / FPS);
+		SDL_Delay(1000 / server::FPS);
 	}
 
-	cleanUp();
+	server::cleanUp();
 	return 0;
 }

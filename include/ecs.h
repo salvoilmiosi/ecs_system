@@ -85,7 +85,6 @@ private:
 
 	template<typename T>
 	void addComponentHelper(entity_id ent, T component) {
-		// trova la lista di componenti di T e aggiunge component
 		getComponent<T>(ent) = component;
 		entity_list[ent].mask |= generateMask<T>();
 	}
@@ -195,7 +194,7 @@ entity_id world<ComponentList, MaxEntities>::createEntity(Ts ... components) {
 	// so the first entity_id in nextSize should be free
 
 	if (nextSize >= maxSize) {
-		entity_id_list[nextSize] = nextSize;
+		entity_id_list[nextSize] = logger.input ? maxSize << 1 : maxSize; // use even ids for local entities
 		++maxSize;
 	}
 
@@ -212,8 +211,8 @@ entity_id world<ComponentList, MaxEntities>::createEntity(Ts ... components) {
 
 template<typename ComponentList, size_t MaxEntities>
 void world<ComponentList, MaxEntities>::updateEntities() {
-	//moves all alive entities to the left, all dead entities to the right
-	//credit to Vittorio Romeo for the algorithm
+	// Moves all alive entities to the left, all dead entities to the right
+	// Credit to Vittorio Romeo for the algorithm
 	size_t iD = 0, iA = nextSize - 1;
 
 	while (true) {
@@ -237,6 +236,8 @@ void world<ComponentList, MaxEntities>::updateEntities() {
 
 template<typename ComponentList, size_t MaxEntities> template<typename ... Ts>
 void world<ComponentList, MaxEntities>::logComponents(entity_id ent, edit_type type) {
+	if (logger.input) return;
+
 	auto edit = logger.create();
 	edit.type = type;
 	edit.id = ent;
@@ -247,6 +248,8 @@ void world<ComponentList, MaxEntities>::logComponents(entity_id ent, edit_type t
 
 template<typename ComponentList, size_t MaxEntities>
 void world<ComponentList, MaxEntities>::logMask(entity_id ent) {
+	if (logger.input) return;
+
 	auto edit = logger.create();
 	edit.type = EDIT_MASK;
 	edit.id = ent;
@@ -257,6 +260,8 @@ void world<ComponentList, MaxEntities>::logMask(entity_id ent) {
 
 template<typename ComponentList, size_t MaxEntities>
 void world<ComponentList, MaxEntities>::logState() {
+	if (logger.input) return;
+
 	forEachEntity([this](entity_id id) {
 		auto edit = logger.create();
 		edit.type = EDIT_STATE;
@@ -276,10 +281,20 @@ void world<ComponentList, MaxEntities>::applyEdits() {
 			entity_list[edit.id].mask = edit.mask;
 			break;
 		case EDIT_CREATE:
-			if (edit.id >= capacity) {
+		{
+			while (edit.id >= capacity) {
 				growContainers();
 			}
+			if (edit.id >= maxSize) {
+				maxSize = edit.id;
+			}
+
+			entity_id_list[nextSize] = edit.id;
+			entity_list[edit.it].alive = true;
+
+			++nextSize;
 			// fall through
+		}
 		case EDIT_STATE:
 			entity_list[edit.id].mask.reset();
 			// fall through

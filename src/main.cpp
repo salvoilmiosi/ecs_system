@@ -76,8 +76,9 @@ void render() {
 }
 
 void clickedMouse() {
-	std::ofstream out_file("data", std::ios::out | std::ios::binary);
-	wld.logEntities(out_file);
+	std::ofstream out_file("data", std::ios::out | std::ios::binary | std::ios::app);
+	//wld.logState();
+	wld.flushLog(out_file);
 }
 
 }

@@ -2,7 +2,7 @@
 #define __EDIT_LOGGER_H__
 
 #include <deque>
-#include <ostream>
+#include <iostream>
 #include <bitset>
 #include <tuple>
 
@@ -11,7 +11,9 @@
 namespace ecs {
 
 enum edit_type {
-	EDIT_NONE, // no edit, just change the mask
+	EDIT_NONE, // no edit
+	EDIT_MASK, // change just the mask
+	EDIT_CREATE, // create entity and add components
 	EDIT_STATE, // edit all components
 	EDIT_ADD, // add components in mask
 };
@@ -42,32 +44,67 @@ public:
 		edits.push_back(edit);
 	}
 
-	void flush(std::ostream &out) {
-		while (!edits.empty()) {
-			auto &obj = edits.front();
-			edits.pop_front();
-			if (obj.mask.none()) continue;
+	void read(std::istream &in) {
+		while (!in.eof()) {
+			auto edit = create();
+			readBinary<char>(in); // 'T'
+			readBinary<uint8_t>(edit.type, in);
 
-			writeBinary('A', out);
-			writeBinary(obj.id, out);
+			if (edit.type == EDIT_NONE) continue;
 
-			writeBinary('B', out);
-			writeBinary(obj.mask.to_ulong(), out);
+			readBinary<char>(in); // 'I'
+			readBinary<uint64_t>(edit.id, in);
 
-			writeBinary('C', out);
-			writeBinary(obj.type, out);
+			readBinary<char>(in); // 'M'
+			edit.mask = readBinary<uint64_t>(in);
 
-			if (obj.type == EDIT_NONE) continue;
+			if (edit.type == EDIT_MASK) continue;
 
-			writeBinary('D', out);
 			size_t i = 0;
-			mpl::for_each_in_tuple(obj.data, [&](auto &comp){
-				if (obj.mask.test(i)) {
-					writeBinary(comp, out);
+			mpl::for_each_in_tuple(edit.data, [&](auto &comp) {
+				if (edit.mask.test(i)) {
+					readBinary<char>(in); // 'C'
+					readBinary(comp, in);
 				}
 				++i;
 			});
+
+			add(edit);
 		}
+	}
+
+	// iterates over the deque while clearing it
+	template<typename Func>
+	void forEachEdit(Func func) {
+		while (!edits.empty()) {
+			auto &obj = edits.front();
+			if (obj.type != EDIT_NONE) {
+				func(obj);
+			}
+			edits.pop_front();
+		}
+	}
+
+	void flush(std::ostream &out) {
+		forEachEdit([&](auto &obj){
+			writeBinary('T', out);
+			writeBinary<uint8_t>(obj.type, out);
+			writeBinary('I', out);
+			writeBinary<uint64_t>(obj.id, out);
+			writeBinary('M', out);
+			writeBinary<uint64_t>(obj.mask.to_ullong(), out);
+
+			if (obj.type != EDIT_MASK) {
+				size_t i = 0;
+				mpl::for_each_in_tuple(obj.data, [&](auto &comp) {
+					if (obj.mask.test(i)) {
+						writeBinary('C', out);
+						writeBinary(comp, out);
+					}
+					++i;
+				});
+			}
+		});
 	}
 
 private:
@@ -76,6 +113,18 @@ private:
 	template<typename T>
 	void writeBinary(const T& obj, std::ostream &out) {
 		out.write(reinterpret_cast<const char *>(&obj), sizeof(T));
+	}
+
+	template<typename T>
+	void readBinary(T &obj, std::istream &in) {
+		in.read(reinterpret_cast<char *>(&obj), sizeof(T));
+	}
+
+	template<typename T>
+	T readBinary(std::istream &in) {
+		T obj;
+		readBinary(obj, in);
+		return obj;
 	}
 };
 

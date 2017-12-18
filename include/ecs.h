@@ -24,7 +24,7 @@ class world {
 
 private:
 	template<typename T>
-	using container = growing_array<T>;
+	using container = std::array<T, MaxEntities>;
 
 	template<typename ... Ts>
 	using components_tuple = std::tuple<container<Ts>...>;
@@ -45,7 +45,7 @@ private:
 	size_t currentSize = 0;
 	size_t nextSize = 0;
 	size_t maxSize = 0;
-	size_t capacity = 0;
+	size_t capacity = MaxEntities;
 
 	template<typename T>
 	static constexpr bool isComponent() {
@@ -78,6 +78,26 @@ private:
 		return singleEntityComponents(ent, std::make_index_sequence<ComponentList::size>());
 	}
 
+	template<typename ... Ts>
+	void logComponents(entity_id ent, edit_type type);
+
+	void logMask(entity_id ent);
+
+	template<typename T>
+	void addComponentHelper(entity_id ent, T component) {
+		// trova la lista di componenti di T e aggiunge component
+		getComponent<T>(ent) = component;
+		entity_list[ent].mask |= generateMask<T>();
+	}
+
+	void addComponentsHelper(entity_id ent) {}
+
+	template<typename T, typename ... Ts>
+	void addComponentsHelper(entity_id ent, T first, Ts ... components) {
+		addComponentHelper(ent, first);
+		addComponentsHelper(ent, components ...);
+	}
+
 public:
 	template<typename ... Ts>
 	constexpr component_mask generateMask() {
@@ -91,20 +111,18 @@ public:
 		return std::get<container<T>>(component_data)[ent];
 	}
 
-	void addComponents(entity_id ent) {}
-
 	template<typename T>
 	void addComponent(entity_id ent, T component) {
 		static_assert(isComponent<T>());
-		// trova la lista di componenti di T e aggiunge component
-		getComponent<T>(ent) = component;
-		entity_list[ent].mask |= generateMask<T>();
+		addComponentHelper(ent, component);
+		logComponents<T>(ent, EDIT_ADD);
 	}
 
-	template<typename T, typename ... Ts>
-	void addComponents(entity_id ent, T first, Ts ... components) {
-		addComponent(ent, first);
-		addComponents(ent, components ...);
+	template<typename ... Ts>
+	void addComponents(entity_id ent, Ts ... components) {
+		static_assert(areAllComponents<Ts ...>());
+		addComponentsHelper(ent, components ...);
+		logComponents<Ts ...>(ent, EDIT_ADD);
 	}
 
 	template<typename T>
@@ -129,6 +147,7 @@ public:
 	void removeEntity(entity_id ent) {
 		entity_list[ent].alive = false;
 		entity_list[ent].mask.reset();
+		logMask(ent);
 	}
 
 	size_t entityCount() {
@@ -143,11 +162,19 @@ public:
 
 	void updateEntities();
 
-	void logEntities(std::ostream &out);
+	void logState();
+
+	void applyEdits();
+
+	void flushLog(std::ostream &out) {
+		logger.flush(out);
+	}
 };
 
 template<typename ComponentList, size_t MaxEntities>
 void world<ComponentList, MaxEntities>::growContainers() {
+	throw std::out_of_range("Containers are full");
+	/*
 	entity_id_list.grow();
 	entity_list.grow();
 
@@ -155,13 +182,11 @@ void world<ComponentList, MaxEntities>::growContainers() {
 		x.grow();
 	});
 
-	capacity = entity_id_list.size();
+	capacity = entity_id_list.size();*/
 }
 
 template<typename ComponentList, size_t MaxEntities> template<typename ... Ts>
 entity_id world<ComponentList, MaxEntities>::createEntity(Ts ... components) {
-	static_assert(areAllComponents<Ts ...>());
-
 	if (nextSize >= capacity) {
 		growContainers();
 	}
@@ -180,7 +205,8 @@ entity_id world<ComponentList, MaxEntities>::createEntity(Ts ... components) {
 	
 	++nextSize;
 
-	addComponents(ent, components ...);
+	addComponentsHelper(ent, components ...);
+	logComponents<Ts ...>(ent, EDIT_CREATE);
 	return ent;
 }
 
@@ -209,8 +235,28 @@ void world<ComponentList, MaxEntities>::updateEntities() {
 	currentSize = nextSize = iD;
 }
 
+template<typename ComponentList, size_t MaxEntities> template<typename ... Ts>
+void world<ComponentList, MaxEntities>::logComponents(entity_id ent, edit_type type) {
+	auto edit = logger.create();
+	edit.type = type;
+	edit.id = ent;
+	edit.mask = generateMask<Ts ...>();
+	edit.data = singleEntityComponents(ent);
+	logger.add(edit);
+}
+
 template<typename ComponentList, size_t MaxEntities>
-void world<ComponentList, MaxEntities>::logEntities(std::ostream &out) {
+void world<ComponentList, MaxEntities>::logMask(entity_id ent) {
+	auto edit = logger.create();
+	edit.type = EDIT_MASK;
+	edit.id = ent;
+	edit.mask = entity_list[ent].mask;
+	// edit.data is unset
+	logger.add(edit);
+}
+
+template<typename ComponentList, size_t MaxEntities>
+void world<ComponentList, MaxEntities>::logState() {
 	forEachEntity([this](entity_id id) {
 		auto edit = logger.create();
 		edit.type = EDIT_STATE;
@@ -220,8 +266,43 @@ void world<ComponentList, MaxEntities>::logEntities(std::ostream &out) {
 
 		logger.add(edit);
 	});
+}
 
-	logger.flush(out);
+template<typename ComponentList, size_t MaxEntities>
+void world<ComponentList, MaxEntities>::applyEdits() {
+	logger.forEachEdit([this](auto &edit) {
+		switch (edit.type) {
+		case EDIT_MASK:
+			entity_list[edit.id].mask = edit.mask;
+			break;
+		case EDIT_CREATE:
+			if (edit.id >= capacity) {
+				growContainers();
+			}
+			// fall through
+		case EDIT_STATE:
+			entity_list[edit.id].mask.reset();
+			// fall through
+		case EDIT_ADD:
+		{
+			entity_list[edit.id].mask |= edit.mask;
+
+			size_t i = 0;
+			for_each_in_tuple(edit.data, [&](auto &comp) {
+				if (edit.mask.test(i)) {
+					std::get<decltype(comp)>(component_data)[edit.id] = comp;
+				}
+				++i;
+			});
+			break;
+		}
+		default:
+			break;
+		}
+		if (edit.mask.none()) {
+			entity_list[edit.id].alive = false;
+		}
+	});
 }
 
 template<typename ... Ts>

@@ -1,0 +1,50 @@
+CXX = g++
+LD = g++
+
+# Set these parameters when using this Makefile
+
+CFLAGS ?= -g -Wall --std=c++1z
+LDFLAGS ?=
+LIBS ?=
+SRC ?= src
+OUT ?= out
+INC_DIR ?= include
+BIN_DIR ?= bin
+
+ifeq ($(OS),Windows_NT)
+	OUT := $(OUT).exe
+endif
+
+OBJ_DIR = obj/$(SRC)
+
+$(shell mkdir -p $(BIN_DIR) >/dev/null)
+$(shell mkdir -p $(OBJ_DIR) >/dev/null)
+
+DEPFLAGS = -MT $@ -MMD -MP -MF $(OBJ_DIR)/$*.Td
+
+SOURCES = $(wildcard $(SRC)/*.cpp)
+OBJECTS = $(patsubst $(SRC)/%,$(OBJ_DIR)/%.o,$(basename $(SOURCES)))
+
+$(BIN_DIR)/$(OUT): $(OBJECTS)
+	$(LD) -o $(BIN_DIR)/$(OUT) $(OBJECTS) $(LDFLAGS) $(LIBS)
+
+all: $(BIN_DIR)/$(OUT)
+
+$(OBJ_DIR)/%.o : $(SRC)/%.cpp
+$(OBJ_DIR)/%.o : $(SRC)/%.cpp $(OBJ_DIR)/%.d
+	$(CXX) $(DEPFLAGS) $(CFLAGS) -c -I $(INC_DIR) -o $@ $<
+	@mv -f $(OBJ_DIR)/$*.Td $(OBJ_DIR)/$*.d
+
+$(OBJ_DIR)/%.d: ;
+.PRECIOUS: $(OBJ_DIR)/%.d
+
+-include $(patsubst $(SRC)/%,$(OBJ_DIR)/%.d,$(basename $(SOURCES)))
+
+clean:
+	rm -f $(OBJ_DIR)/*.o
+	rm -f $(OBJ_DIR)/*.d
+	rm -f $(BIN_DIR)/$(OUT)
+	rmdir $(OBJ_DIR)
+	rmdir $(BIN_DIR)
+
+.PHONY: clean

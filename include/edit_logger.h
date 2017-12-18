@@ -38,7 +38,7 @@ public:
 		edit_data data;
 	};
 
-	edit_logger(bool input = false) : input(input) {}
+	explicit edit_logger(bool input = false) : input(input) {}
 
 	entity_edit create() {
 		return entity_edit();

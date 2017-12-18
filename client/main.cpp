@@ -1,24 +1,16 @@
-#include <SDL2/SDL.h>
-#include <fstream>
-
-#include "ecs.h"
+#include "main.h"
 
 #include "systems.h"
 
-static const int SCREEN_W = 1024;
-static const int SCREEN_H = 768;
-static const int FPS = 60;
+namespace client {
 
-static SDL_Window *window;
+SDL_Window *window;
 
 SDL_Renderer *renderer;
 
-ecs::world<MyComponents, MAX_ENTITIES> wld;
+ecs::world<MyComponents, MAX_ENTITIES> wld(true);
 
-namespace {
-
-auto on_tick_systems = std::make_tuple(
-	ecs::system<position, generator>(particle_generator_func),
+static auto on_tick_systems = std::make_tuple(
 	ecs::system<printable, position>(print_func),
 	ecs::system<position, velocity>(move_func),
 	ecs::system<velocity, acceleration>(accelerate_func),
@@ -26,12 +18,15 @@ auto on_tick_systems = std::make_tuple(
 	ecs::system<health>(health_tick_func)
 );
 
-auto on_draw_systems = std::make_tuple(
+static auto on_draw_systems = std::make_tuple(
 	ecs::system<sprite, position, scale>(draw_func)
 );
 
-bool initSDL() {
+static bool initSDL() {
 	if (SDL_Init(SDL_INIT_EVERYTHING) == -1)
+		return false;
+
+	if (SDLNet_Init())
 		return false;
 
 	window = SDL_CreateWindow("Sistema ECS",
@@ -49,71 +44,62 @@ bool initSDL() {
 	return true;
 }
 
-void cleanUp() {
+static void cleanUp() {
 	SDL_DestroyRenderer(renderer);
+	SDLNet_Quit();
 	SDL_Quit();
 }
 
-inline void executeAll(auto &systems) {
+static inline void executeAll(auto &systems) {
 	mpl::for_each_in_tuple(systems, [](auto &x) {
 		x.execute(wld);
 	});
 }
 
-void init() {
-	wld.createEntity(position(SCREEN_W / 2.0, SCREEN_H / 2.0), generator(20));
-	wld.updateEntities();
+static void init() {
+	
 }
 
-void tick() {
+static void tick() {
 	executeAll(on_tick_systems);
 	wld.updateEntities();
 }
 
-void render() {
+static void render() {
 	executeAll(on_draw_systems);
 	SDL_RenderPresent(renderer);
-}
-
-void clickedMouse() {
-	std::ofstream out_file("data", std::ios::out | std::ios::binary | std::ios::app);
-	//wld.logState();
-	wld.flushLog(out_file);
 }
 
 }
 
 int main (int argc, char** argv) {
-	if (!initSDL()) return 1;
+	if (!client::initSDL()) return 1;
 
 	SDL_Event event;
 
-	init();
+	client::init();
 
 	bool quit = false;
 	while(!quit) {
-		SDL_SetRenderDrawColor(renderer, 0x0, 0x0, 0x0, 0xff);
-		SDL_RenderClear(renderer);
+		SDL_SetRenderDrawColor(client::renderer, 0x0, 0x0, 0x0, 0xff);
+		SDL_RenderClear(client::renderer);
 
-		tick();
-		render();
+		client::tick();
+		client::render();
 
 		while (SDL_PollEvent(&event)) {
 			switch (event.type) {
 			case SDL_QUIT:
 				quit = true;
 				break;
-			case SDL_MOUSEBUTTONDOWN:
-				clickedMouse();
-				break;
 			default:
 				break;
 			}
 		}
 
-		SDL_Delay(1000 / FPS);
+		SDL_Delay(1000 / client::FPS);
 	}
 
-	cleanUp();
+	client::cleanUp();
 	return 0;
 }

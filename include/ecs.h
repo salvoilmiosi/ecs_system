@@ -98,6 +98,8 @@ private:
 	}
 
 public:
+	explicit world(bool input = false) : logger(input) {}
+
 	template<typename ... Ts>
 	constexpr component_mask generateMask() {
 		static_assert(areAllComponents<Ts ...>());
@@ -165,6 +167,10 @@ public:
 
 	void applyEdits();
 
+	void readLog(std::istream &in) {
+		logger.read(in);
+	}
+
 	void flushLog(std::ostream &out) {
 		logger.flush(out);
 	}
@@ -213,6 +219,8 @@ template<typename ComponentList, size_t MaxEntities>
 void world<ComponentList, MaxEntities>::updateEntities() {
 	// Moves all alive entities to the left, all dead entities to the right
 	// Credit to Vittorio Romeo for the algorithm
+	if (nextSize == 0) return;
+	
 	size_t iD = 0, iA = nextSize - 1;
 
 	while (true) {

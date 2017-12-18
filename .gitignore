@@ -1,4 +1,3 @@
-*.o
-*.d
-*.exe
 bin/*
+obj/*
+.vscode/*

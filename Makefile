@@ -31,8 +31,8 @@ DEPFLAGS = -MT $@ -MMD -MP -MF $(OBJ_DIR)/$*.Td
 SOURCES = $(wildcard src/*.cpp)
 OBJECTS = $(patsubst src/%,$(OBJ_DIR)/%.o,$(basename $(SOURCES)))
 
-debug: all
 all: $(BIN_DIR)/$(OUT_BIN)
+debug: all
 
 $(BIN_DIR)/$(OUT_BIN): $(OBJECTS)
 	$(LD) -o $(BIN_DIR)/$(OUT_BIN) $(OBJECTS) $(LDFLAGS) $(LIBS)

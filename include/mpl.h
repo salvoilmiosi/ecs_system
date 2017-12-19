@@ -115,17 +115,6 @@ inline void for_each_in_tuple(std::tuple<Ts...> & tuple, F func){
 	for_each_in_tuple(tuple, func, std::make_index_sequence<sizeof...(Ts)>());
 }
 
-template<class F, class...T1s, class...T2s, std::size_t...Is>
-inline void for_each_in_2_tuples(std::tuple<T1s...> &tuple1, std::tuple<T2s...> &tuple2, F func, std::index_sequence<Is...>){
-	using expander = int[];
-	(void)expander { 0, ((void)func(std::get<Is>(tuple1), std::get<Is>(tuple2)), 0)... };
-}
-
-template<class F, class...T1s, class...T2s>
-inline void for_each_in_2_tuples(std::tuple<T1s...> & tuple1, std::tuple<T2s...> &tuple2, F func){
-	for_each_in_2_tuples(tuple1, tuple2, func, std::make_index_sequence<sizeof...(T1s)>());
-}
-
 }
 
 #endif // __MPL_H__

@@ -14,20 +14,20 @@ void packet_joiner::add(UDPpacket pack) {
 	memcpy(&p.header, pack.data, sizeof(p.header));
 	memcpy(p.data, pack.data + sizeof(p.header), p.len);
 
-	packets.push_back(p);
+	packets.push_front(p);
 
 	findJoin(p.header.time);
 
-	if (!packets.empty() && SDL_GetTicks() - packets.front().time_added > CLIENT_TIMEOUT) {
-		packets.pop_front();
+	if (!packets.empty() && SDL_GetTicks() - packets.back().time_added > CLIENT_TIMEOUT) {
+		packets.pop_back();
 	}
 }
 
 void packet_joiner::findJoin(Uint32 time) {
 	std::vector<packet_it> sameTime;
-	for (auto it = packets.rbegin(); it != packets.rend(); ++it) {
+	for (auto it = packets.begin(); it != packets.end(); ++it) {
 		if (it->header.time == time) {
-			sameTime.push_back(std::next(it).base());
+			sameTime.push_back(it);
 			if (sameTime.size() >= it->header.slices) {
 				join(sameTime);
 				break;

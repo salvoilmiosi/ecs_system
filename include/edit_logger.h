@@ -5,6 +5,7 @@
 #include <iostream>
 #include <bitset>
 #include <tuple>
+#include <cassert>
 
 #include "mpl.h"
 
@@ -47,15 +48,15 @@ public:
 	void read(std::istream &in) {
 		while (!in.eof()) {
 			auto edit = create();
-			readBinary<char>(in); // 'T'
+			assert(readBinary<char>(in) == 'T');
 			edit.type = static_cast<edit_type>(readBinary<uint8_t>(in));
 
 			if (edit.type == EDIT_NONE) continue;
 
-			readBinary<char>(in); // 'I'
+			assert(readBinary<char>(in) == 'I');
 			readBinary<uint64_t>(edit.id, in);
 
-			readBinary<char>(in); // 'M'
+			assert(readBinary<char>(in) == 'M');
 			edit.mask = readBinary<uint64_t>(in);
 
 			if (edit.type == EDIT_MASK) continue;
@@ -63,7 +64,7 @@ public:
 			size_t i = 0;
 			mpl::for_each_in_tuple(edit.data, [&](auto &comp) {
 				if (edit.mask.test(i)) {
-					readBinary<char>(in); // 'C'
+					assert(readBinary<char>(in) == 'C');
 					readBinary(comp, in);
 				}
 				++i;

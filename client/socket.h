@@ -23,7 +23,7 @@ public:
 	template<typename Func>
 	void forEachJoined(Func func) {
 		while (!joined.empty()) {
-			func(joined.front().data);
+			func(joined.front());
 			joined.pop_front();
 		}
 	}
@@ -40,16 +40,11 @@ private:
 		size_t len;
 	};
 
-	struct packet_joined {
-		Uint32 time;
-		std::string data;
-	};
-
 	std::list<packet> packets;
 
 	typedef std::list<packet>::iterator packet_it;
 
-	std::deque<packet_joined> joined;
+	std::deque<std::string> joined;
 
 	void findJoin(Uint32 time);
 

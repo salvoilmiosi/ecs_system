@@ -107,7 +107,7 @@ void server_socket::sendAll(Uint8 *data_ptr, int len) {
 void server_socket::received() {
 	std::lock_guard lock(c_mutex);
 
-	std::cout << ipString(receiver.address) << ": " << pack_data << std::endl;
+	//std::cout << ipString(receiver.address) << ": " << pack_data << std::endl;
 	// if (strcmp(pack_data, "CONNECT") == 0) {
 
 	// testing with netcat

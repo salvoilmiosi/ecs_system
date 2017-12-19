@@ -41,17 +41,12 @@ void packet_joiner::join(std::vector<packet_it> &sameTime) {
 		return a->header.count < b->header.count;
 	});
 
-	packet_joined pj;
-	pj.time = sameTime.front()->header.time;
+	std::string data;
 	for (auto &x : sameTime) {
-		pj.data.append((char *)x->data, x->len);
+		data.append((char *)x->data, x->len);
 		packets.erase(x);
 	}
-
-	joined.push_back(pj);
-	std::sort(joined.begin(), joined.end(), [](auto &a, auto &b) {
-		return a.time < b.time;
-	});
+	joined.push_back(data);
 }
 
 bool client_socket::connect(IPaddress addr) {

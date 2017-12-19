@@ -60,19 +60,6 @@ private:
 	}
 };
 
-template<typename ComponentList, size_t MaxEntities = MAX_ENTITIES_DEFAULT>
-class world_in : public world<ComponentList, MaxEntities> {
-public:
-	void applyEdits();
-
-	void readLog(std::istream &in) {
-		logger.read(in);
-	}
-
-private:
-	edit_logger<ComponentList> logger;
-};
-
 template<typename ComponentList, size_t MaxEntities> template<typename ... Ts>
 void world_out<ComponentList, MaxEntities>::logComponents(entity_id ent, edit_type type) {
 	auto edit = logger.create();
@@ -108,9 +95,93 @@ edit_logger<ComponentList> world_out<ComponentList, MaxEntities>::logState() {
 	return state_logger;
 }
 
+template<typename ComponentList, size_t MaxEntities = MAX_ENTITIES_DEFAULT>
+class world_in : public world<ComponentList, MaxEntities> {
+public:
+	void applyEdits();
+
+	void readLog(std::istream &in) {
+		logger.read(in);
+	}
+
+private:
+	edit_logger<ComponentList> logger;
+
+	typename SUPER::template container<entity_id> local_ids;
+
+	typedef typename SUPER::component_mask component_mask;
+
+	auto &remoteEntity(entity_id remote_id) {
+		return this->entity_list[local_ids[remote_id]];
+	}
+
+	void setMask(entity_id id, component_mask mask) {
+		auto &ent = remoteEntity(id);
+		ent.mask = mask;
+		if (mask.none()) {
+			ent.alive = false;
+		}
+	}
+
+	template<typename ... Ts>
+	entity_id createEntity(entity_id id, Ts ... components) {
+		return local_ids[id] = SUPER::createEntity(components ...);
+	}
+
+	template<typename ... Ts>
+	void stateEntity(entity_id id) {
+		auto &ent = remoteEntity(id);
+		if (ent.alive) {
+			ent.mask.reset();
+		} else {
+			createEntity(id);
+		}
+	}
+
+	template<typename T>
+	void addComponent(entity_id id, T component) {
+		SUPER::addComponent(local_ids[id], component);
+	}
+
+	template<typename ... Ts>
+	void addComponents(entity_id id, Ts ... components) {
+		SUPER::addComponents(local_ids[id], components ...);
+	}
+
+	void editHelper(auto &edit) {
+		size_t i = 0;
+		mpl::for_each_in_tuple(edit.data, [&](auto &comp) {
+			if (edit.mask.test(i)) {
+				addComponent(edit.id, comp);
+			}
+			++i;
+		});
+	}
+};
+
 template<typename ComponentList, size_t MaxEntities>
 void world_in<ComponentList, MaxEntities>::applyEdits() {
-
+	logger.forEachEdit([this](auto &edit) {
+		switch(edit.type) {
+		case EDIT_MASK:
+			setMask(edit.id, edit.mask);
+			break;
+		case EDIT_CREATE:
+			createEntity(edit.id);
+			editHelper(edit);
+			break;
+		case EDIT_STATE:
+			stateEntity(edit.id);
+			editHelper(edit);
+			break;
+		case EDIT_ADD:
+			editHelper(edit);
+			break;
+		case EDIT_NONE:
+		default:
+			break;
+		}
+	});
 }
 // template<typename ComponentList, size_t MaxEntities>
 // void world_in<ComponentList, MaxEntities>::applyEdits() {

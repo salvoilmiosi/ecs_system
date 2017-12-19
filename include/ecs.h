@@ -161,8 +161,8 @@ entity_id world<ComponentList, MaxEntities>::createEntity(Ts ... components) {
 	// so the first entity_id in nextSize should be free
 
 	if (nextSize >= maxSize) {
+		++maxSize; // the first entity is 1
 		entity_id_list[nextSize] = maxSize;
-		++maxSize;
 	}
 
 	entity_id ent = entity_id_list[nextSize];

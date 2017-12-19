@@ -26,7 +26,7 @@ static bool initSDL() {
 	if (SDL_Init(SDL_INIT_EVERYTHING) == -1)
 		return false;
 
-	if (SDLNet_Init())
+	if (SDLNet_Init() == -1)
 		return false;
 
 	window = SDL_CreateWindow("Sistema ECS",

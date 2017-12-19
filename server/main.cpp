@@ -2,6 +2,10 @@
 
 #include "systems.h"
 
+#include "socket.h"
+
+#include <sstream>
+
 namespace server {
 
 SDL_Window *window;
@@ -9,6 +13,8 @@ SDL_Window *window;
 SDL_Renderer *renderer;
 
 ecs::world<MyComponents, MAX_ENTITIES> wld;
+
+socket::server_socket sock;
 
 static auto on_tick_systems = std::make_tuple(
 	ecs::system<position, generator>(particle_generator_func),
@@ -27,6 +33,9 @@ static bool initSDL() {
 	if (SDL_Init(SDL_INIT_EVERYTHING) == -1)
 		return false;
 
+	if (SDLNet_Init() == -1)
+		return false;
+
 	window = SDL_CreateWindow("Sistema ECS",
 		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
 		SCREEN_W, SCREEN_H, SDL_WINDOW_SHOWN);
@@ -43,6 +52,10 @@ static bool initSDL() {
 }
 
 static void cleanUp() {
+	sock.close();
+
+	SDLNet_Quit();
+	
 	SDL_DestroyRenderer(renderer);
 	SDL_Quit();
 }
@@ -54,19 +67,34 @@ static inline void executeAll(auto &systems) {
 }
 
 static void init() {
-	wld.createEntity(position(SCREEN_W / 2.0, SCREEN_H / 2.0), generator(20));
+	sock.open();
+	sock.run();
+
+	wld.createEntity(position(SCREEN_W / 2.0, SCREEN_H / 2.0), generator(10));
 	wld.updateEntities();
+}
+
+static void broadcast() {
+	std::ostringstream oss(std::ios::out | std::ios::binary);
+
+	wld.flushLog(oss);
+
+	std::string packet = oss.str();
+	sock.sendAll((Uint8 *)packet.data(), packet.size());
 }
 
 static void tick() {
 	executeAll(on_tick_systems);
 	wld.updateEntities();
+
+	broadcast();
 }
 
 static void render() {
 	executeAll(on_draw_systems);
 	SDL_RenderPresent(renderer);
 }
+
 
 }
 

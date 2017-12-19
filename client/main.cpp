@@ -1,6 +1,10 @@
 #include "main.h"
 
+#include <sstream>
+
 #include "systems.h"
+
+#include "socket.h"
 
 namespace client {
 
@@ -9,6 +13,8 @@ SDL_Window *window;
 SDL_Renderer *renderer;
 
 ecs::world<MyComponents, MAX_ENTITIES> wld(true);
+
+socket::client_socket sock;
 
 static auto on_tick_systems = std::make_tuple(
 	ecs::system<printable, position>(print_func),
@@ -57,12 +63,28 @@ static inline void executeAll(auto &systems) {
 }
 
 static void init() {
-	
+	IPaddress addr;
+	SDLNet_ResolveHost(&addr, "localhost", socket::PORT);
+	sock.connect(addr);
+
+	sock.run();
+}
+
+static void readPackets() {
+	sock.forEachPacket([](auto &x) {
+		std::istringstream in(x, std::ios::in | std::ios::binary);
+
+		wld.readLog(in);
+	});
+
+	wld.applyEdits();
 }
 
 static void tick() {
 	executeAll(on_tick_systems);
 	wld.updateEntities();
+
+	readPackets();
 }
 
 static void render() {
@@ -91,6 +113,9 @@ int main (int argc, char** argv) {
 			switch (event.type) {
 			case SDL_QUIT:
 				quit = true;
+				break;
+			case SDL_MOUSEBUTTONDOWN:
+				client::sock.sendChar('c');
 				break;
 			default:
 				break;

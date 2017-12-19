@@ -298,7 +298,7 @@ void world<ComponentList, MaxEntities>::applyEdits() {
 			}
 
 			entity_id_list[nextSize] = edit.id;
-			entity_list[edit.it].alive = true;
+			entity_list[edit.id].alive = true;
 
 			++nextSize;
 			// fall through
@@ -311,12 +311,12 @@ void world<ComponentList, MaxEntities>::applyEdits() {
 			entity_list[edit.id].mask |= edit.mask;
 
 			size_t i = 0;
-			for_each_in_tuple(edit.data, [&](auto &comp) {
-				if (edit.mask.test(i)) {
-					std::get<decltype(comp)>(component_data)[edit.id] = comp;
-				}
-				++i;
-			});
+			// mpl::for_each_in_2_tuples(edit.data, component_data, [&](auto &c1, auto &c2) {
+			// 	if (edit.mask.test(i)) {
+			// 		c2[edit.id] = c1;
+			// 	}
+			// 	++i;
+			// });
 			break;
 		}
 		default:

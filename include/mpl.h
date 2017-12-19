@@ -104,7 +104,7 @@ struct allHaveDefaultConstructor<TypeList<T, Ts...>>
 {
 };
 
-template<class F, class...Ts, std::size_t...Is>
+template<class F, class...Ts, size_t...Is>
 inline void for_each_in_tuple(std::tuple<Ts...> & tuple, F func, std::index_sequence<Is...>){
 	using expander = int[];
 	(void)expander { 0, ((void)func(std::get<Is>(tuple)), 0)... };
@@ -115,6 +115,15 @@ inline void for_each_in_tuple(std::tuple<Ts...> & tuple, F func){
 	for_each_in_tuple(tuple, func, std::make_index_sequence<sizeof...(Ts)>());
 }
 
-}
+// template<class F, class...Ts, size_t...Is>
+// inline void for_each_in_2_tuples(std::tuple<Ts...> &tuple1, std::tuple<Ts...> &tuple2, F func, std::index_sequence<Is...>){
+// 	using expander = int[];
+// 	(void)expander { 0, ((void)func(std::get<Is>(tuple1), std::get<Is>(tuple2)), 0)... };
+// }
+
+// template<class F, class...Ts>
+// inline void for_each_in_2_tuples(std::tuple<Ts...> & tuple, std::tuple<Ts...> &tuple2, F func){
+// 	for_each_in_tuple(tuple1, tuple2, func, std::make_index_sequence<sizeof...(Ts)>());
+// }
 
 #endif // __MPL_H__

@@ -52,7 +52,7 @@ public:
 		while (!in.eof()) {
 			auto edit = create();
 			readBinary<char>(in); // 'T'
-			readBinary<uint8_t>(edit.type, in);
+			edit.type = static_cast<edit_type>(readBinary<uint8_t>(in));
 
 			if (edit.type == EDIT_NONE) continue;
 

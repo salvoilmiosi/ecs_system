@@ -6,6 +6,7 @@
 #include <thread>
 #include <mutex>
 #include <iostream>
+#include <list>
 
 namespace socket {
 
@@ -35,13 +36,6 @@ static const int CHECK_TIMEOUT = 1000;
 static const int CLIENT_TIMEOUT = 5000;
 
 class server_socket {
-private:
-	UDPsocket sock = NULL;
-
-	SDLNet_SocketSet sock_set;
-
-	std::thread serv_thread;
-
 public:
 	server_socket() {
 		sock_set = SDLNet_AllocSocketSet(1);
@@ -51,10 +45,6 @@ public:
 		receiver.channel = -1;
 		receiver.data = pack_data;
 		receiver.maxlen = PACKET_SIZE;
-	}
-
-	server_socket(uint16_t port) {
-		open(port);
 	}
 
 	~server_socket() {
@@ -76,8 +66,8 @@ public:
 
 	void close() {
 		if (sock) {
-			SDLNet_UDP_Close(sock);
 			SDLNet_UDP_DelSocket(sock_set, sock);
+			SDLNet_UDP_Close(sock);
 			sock = NULL;
 		}
 	}
@@ -146,6 +136,11 @@ public:
 	}
 
 private:
+	UDPsocket sock = NULL;
+	SDLNet_SocketSet sock_set;
+
+	std::thread serv_thread;
+
 	UDPpacket receiver;
 	Uint8 pack_data[PACKET_SIZE];
 
@@ -154,7 +149,7 @@ private:
 		Uint32 last_seen;
 	};
 
-	std::vector<client_info> clients_connected;
+	std::list<client_info> clients_connected;
 
 	std::mutex c_mutex;
 

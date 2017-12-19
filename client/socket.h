@@ -4,6 +4,7 @@
 #include <SDL2/SDL_net.h>
 
 #include <thread>
+#include <mutex>
 #include <deque>
 #include <vector>
 #include <list>
@@ -17,23 +18,7 @@ static const int CLIENT_TIMEOUT = 5000;
 
 class packet_joiner {
 public:
-	void add(UDPpacket pack) {
-		packet p;
-		p.len = pack.len - sizeof(p.header);
-		p.time_added = SDL_GetTicks();
-
-		memset(p.data, 0, PACKET_SIZE);
-		memcpy(&p.header, pack.data, sizeof(p.header));
-		memcpy(p.data, pack.data + sizeof(p.header), p.len);
-
-		packets.push_back(p);
-
-		findJoin(p.header.time);
-
-		if (!packets.empty() && SDL_GetTicks() - packets.front().time_added > CLIENT_TIMEOUT) {
-			packets.pop_front();
-		}
-	}
+	void add(UDPpacket pack);
 	
 	template<typename Func>
 	void forEachJoined(Func func) {
@@ -66,36 +51,9 @@ private:
 
 	std::deque<packet_joined> joined;
 
-	void findJoin(Uint32 time) {
-		std::vector<packet_it> sameTime;
-		for (auto it = packets.rbegin(); it != packets.rend(); ++it) {
-			if (it->header.time == time) {
-				sameTime.push_back(std::next(it).base());
-				if (sameTime.size() >= it->header.slices) {
-					join(sameTime);
-					break;
-				}
-			}
-		}
-	}
+	void findJoin(Uint32 time);
 
-	void join(std::vector<packet_it> &sameTime) {
-		std::sort(sameTime.begin(), sameTime.end(), [](auto &a, auto &b) {
-			return a->header.count < b->header.count;
-		});
-
-		packet_joined pj;
-		pj.time = sameTime.front()->header.time;
-		for (auto &x : sameTime) {
-			pj.data.append((char *)x->data, x->len);
-			packets.erase(x);
-		}
-
-		joined.push_back(pj);
-		std::sort(joined.begin(), joined.end(), [](auto &a, auto &b) {
-			return a.time < b.time;
-		});
-	}
+	void join(std::vector<packet_it> &sameTime);
 };
 
 class client_socket {
@@ -113,84 +71,23 @@ public:
 		client_thread.join();
 	}
 
-	bool connect(IPaddress addr) {
-		server_addr = addr;
+	bool connect(IPaddress addr);
 
-		sock = SDLNet_UDP_Open(0);
-		SDLNet_UDP_Bind(sock, 0, &addr);
+	void close();
 
-		if (!sock) {
-			std::cerr << "Could not open socket: " << SDLNet_GetError() << std::endl;
-			return false;
-		}
-
-		sendChar('c');
-
-		SDLNet_UDP_AddSocket(sock_set, sock);
-		return true;
-	}
-
-	void close() {
-		if (sock) {
-			disconnect();
-			SDLNet_UDP_DelSocket(sock_set, sock);
-			SDLNet_UDP_Close(sock);
-			sock = NULL;
-		}
-	}
-
-	void disconnect() {
-		sendChar('d');
-		memset(&server_addr, 0, sizeof(server_addr));
-	}
+	void disconnect();
 
 	bool sendChar(const char c) {
 		return send(reinterpret_cast<const Uint8*>(&c), 1);
 	}
 
-	bool send(const Uint8 *data, size_t len) {
-		UDPpacket packet;
-		memset(&packet, 0, sizeof(packet));
+	bool send(const Uint8 *data, size_t len);
 
-		Uint8 data_copy[PACKET_SIZE];
-
-		packet.channel = 0;
-		packet.data = data_copy;
-		packet.maxlen = PACKET_SIZE;
-		packet.len = len;
-
-		memset(data_copy, 0, PACKET_SIZE);
-		memcpy(data_copy, data, len);
-
-		if (!SDLNet_UDP_Send(sock, packet.channel, &packet)) {
-			std::cout << "Packet lost" << std::endl;
-			return false;
-		}
-		return true;
-	}
-
-	void run() {
-		client_thread = std::thread([this]() {
-			while (sock) {
-				int numready = SDLNet_CheckSockets(sock_set, CHECK_TIMEOUT);
-
-				sendChar('p');
-
-				if (numready > 0) {
-					memset(pack_data, 0, PACKET_SIZE);
-					if (SDLNet_UDP_Recv(sock, &receiver)) {
-						received();
-					} else {
-						// Server disconnected
-						break;
-					}
-				}
-			}
-		});
-	}
+	void run();
 	
 	template<typename Func>
 	void forEachPacket(Func func) {
+		std::lock_guard lock(j_mutex);
 		joiner.forEachJoined(func);
 	}
 
@@ -207,7 +104,10 @@ private:
 
 	packet_joiner joiner;
 
+	std::mutex j_mutex;
+
 	void received() {
+		std::lock_guard lock(j_mutex);
 		joiner.add(receiver);
 	}
 };

@@ -115,7 +115,7 @@ int main (int argc, char** argv) {
 				quit = true;
 				break;
 			case SDL_MOUSEBUTTONDOWN:
-				client::sock.sendChar('c');
+				client::sock.sendChar('s');
 				break;
 			default:
 				break;

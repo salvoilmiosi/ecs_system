@@ -174,6 +174,8 @@ public:
 			while (sock) {
 				int numready = SDLNet_CheckSockets(sock_set, CHECK_TIMEOUT);
 
+				sendChar('p');
+
 				if (numready > 0) {
 					memset(pack_data, 0, PACKET_SIZE);
 					if (SDLNet_UDP_Recv(sock, &receiver)) {

@@ -311,12 +311,12 @@ void world<ComponentList, MaxEntities>::applyEdits() {
 			entity_list[edit.id].mask |= edit.mask;
 
 			size_t i = 0;
-			// mpl::for_each_in_2_tuples(edit.data, component_data, [&](auto &c1, auto &c2) {
-			// 	if (edit.mask.test(i)) {
-			// 		c2[edit.id] = c1;
-			// 	}
-			// 	++i;
-			// });
+			mpl::for_each_in_2_tuples(edit.data, component_data, [&](auto &c1, auto &c2) {
+				if (edit.mask.test(i)) {
+					c2[edit.id] = c1;
+				}
+				++i;
+			});
 			break;
 		}
 		default:

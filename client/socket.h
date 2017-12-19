@@ -62,7 +62,7 @@ private:
 
 	std::list<packet> packets;
 
-	typedef decltype(packets)::iterator packet_it;
+	typedef std::list<packet>::iterator packet_it;
 
 	std::deque<packet_joined> joined;
 

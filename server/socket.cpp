@@ -2,7 +2,6 @@
 
 #include <iostream>
 #include <algorithm>
-#include <sstream>
 
 #include "main.h"
 
@@ -31,6 +30,8 @@ bool server_socket::open(uint16_t port) {
 		std::cerr << "Could not open socket: " << SDLNet_GetError() << std::endl;
 		return false;
 	}
+
+	std::cout << "Server open on port " << port << std::endl;
 
 	SDLNet_UDP_AddSocket(sock_set, sock);
 	return true;

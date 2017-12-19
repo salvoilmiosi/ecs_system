@@ -105,23 +105,18 @@ public:
 		logger.read(in);
 	}
 
-	template<typename ... Ts>
-	entity_id createEntity(Ts ... components) {
-		return SUPER::createEntity(components ...);
-	}
-
 private:
 	edit_logger<ComponentList> logger;
 
-	typename SUPER::template container<entity_id> local_ids;
+	typename SUPER::template container<entity_id> remote_ids;
 
 	typedef typename SUPER::component_mask component_mask;
 
-	entity_id remoteEntity(entity_id remote_id) {
-		return local_ids[remote_id];
+	entity_id remoteEntity(entity_id id) {
+		return remote_ids[id];
 	}
 
-	void setMask(entity_id id, component_mask mask) {
+	void setMaskRemote(entity_id id, component_mask mask) {
 		auto &ent = SUPER::entity_list[remoteEntity(id)];
 		ent.mask = mask;
 		if (mask.none()) {
@@ -130,35 +125,25 @@ private:
 	}
 
 	template<typename ... Ts>
-	entity_id createEntity(entity_id id, Ts ... components) {
-		return local_ids[id] = createEntity(components ...);
+	entity_id createEntityRemote(entity_id id, Ts ... components) {
+		return remote_ids[id] = SUPER::createEntity(components ...);
 	}
 
 	template<typename ... Ts>
-	void stateEntity(entity_id id) {
+	void stateEntityRemote(entity_id id) {
 		auto &ent = SUPER::entity_list[remoteEntity(id)];
 		if (ent.alive) {
 			ent.mask.reset();
 		} else {
-			createEntity(id);
+			createEntityRemote(id);
 		}
-	}
-
-	template<typename T>
-	void addComponent(entity_id id, T component) {
-		SUPER::addComponent(remoteEntity(id), component);
-	}
-
-	template<typename ... Ts>
-	void addComponents(entity_id id, Ts ... components) {
-		SUPER::addComponents(remoteEntity(id), components ...);
 	}
 
 	void editHelper(auto &edit) {
 		mpl::for_each_in_tuple(edit.data, [&](auto &comp) {
 			component_mask c_mask = SUPER::template generateMask<typename std::remove_reference<decltype(comp)>::type> ();
 			if ((edit.mask & c_mask) == c_mask) {
-				addComponent(edit.id, comp);
+				SUPER::addComponent(remoteEntity(edit.id), comp);
 			}
 		});
 	}
@@ -169,14 +154,14 @@ void world_in<ComponentList, MaxEntities>::applyEdits() {
 	logger.forEachEdit([this](auto &edit) {
 		switch(edit.type) {
 		case EDIT_MASK:
-			setMask(edit.id, edit.mask);
+			setMaskRemote(edit.id, edit.mask);
 			break;
 		case EDIT_CREATE:
-			createEntity(edit.id);
+			createEntityRemote(edit.id);
 			editHelper(edit);
 			break;
 		case EDIT_STATE:
-			stateEntity(edit.id);
+			stateEntityRemote(edit.id);
 			editHelper(edit);
 			break;
 		case EDIT_ADD:

@@ -1,7 +1,5 @@
 #include "main.h"
 
-#include <sstream>
-
 #include "systems.h"
 
 #include "socket.h"
@@ -30,7 +28,7 @@ static auto on_draw_systems = std::make_tuple(
 );
 
 static bool initSDL() {
-	if (SDL_Init(SDL_INIT_EVERYTHING) == -1)
+	if (SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO) == -1)
 		return false;
 
 	if (SDLNet_Init() == -1)

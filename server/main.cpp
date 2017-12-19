@@ -4,13 +4,7 @@
 
 #include "socket.h"
 
-#include <sstream>
-
 namespace server {
-
-SDL_Window *window;
-
-SDL_Renderer *renderer;
 
 ecs::world_out<MyComponents, MAX_ENTITIES> wld;
 
@@ -24,41 +18,6 @@ static auto on_tick_systems = std::make_tuple(
 	ecs::system<health>(health_tick_func)
 );
 
-static auto on_draw_systems = std::make_tuple(
-	ecs::system<sprite, position, scale>(draw_func)
-);
-
-static bool initSDL() {
-	if (SDL_Init(SDL_INIT_EVERYTHING) == -1)
-		return false;
-
-	if (SDLNet_Init() == -1)
-		return false;
-
-	window = SDL_CreateWindow("Sistema ECS - Server",
-		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-		SCREEN_W, SCREEN_H, SDL_WINDOW_SHOWN);
-	if (window == NULL)
-		return false;
-
-	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-	if (renderer == NULL)
-		return false;
-
-	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-
-	return true;
-}
-
-static void cleanUp() {
-	sock.close();
-
-	SDLNet_Quit();
-	
-	SDL_DestroyRenderer(renderer);
-	SDL_Quit();
-}
-
 static inline void executeAll(auto &systems) {
 	mpl::for_each_in_tuple(systems, [](auto &x) {
 		x.execute(wld);
@@ -67,65 +26,44 @@ static inline void executeAll(auto &systems) {
 
 void handleMouse(IPaddress addr, SDL_MouseButtonEvent mouse) {
 	if (mouse.type == SDL_MOUSEBUTTONDOWN) {
-		wld.createEntity(position(mouse.x, mouse.y), generator(10), health(10));
+		wld.createEntity(position(mouse.x, mouse.y), generator(50), health(1));
 	}
 }
 
-static void init() {
-	sock.open();
-	sock.run();
-}
+static void tick() {
+	executeAll(on_tick_systems);
 
-static void broadcast() {
+	wld.updateEntities();
+
 	packet_data_out packet;
-
 	wld.flushLog(packet);
 
 	sock.sendAll(packet.data());
 }
 
-static void tick() {
-	executeAll(on_tick_systems);
-	wld.updateEntities();
-
-	broadcast();
-}
-
-static void render() {
-	executeAll(on_draw_systems);
-	SDL_RenderPresent(renderer);
-}
-
 }
 
 int main (int argc, char** argv) {
-	if (!server::initSDL()) return 1;
+	if (SDL_Init(SDL_INIT_TIMER) == -1)
+		return 1;
 
-	SDL_Event event;
+	if (SDLNet_Init() == -1)
+		return 2;
 
-	server::init();
+	server::sock.open();
+	server::sock.run();
 
 	bool quit = false;
 	while(!quit) {
-		SDL_SetRenderDrawColor(server::renderer, 0x0, 0x0, 0x0, 0xff);
-		SDL_RenderClear(server::renderer);
-
 		server::tick();
-		server::render();
-
-		while (SDL_PollEvent(&event)) {
-			switch (event.type) {
-			case SDL_QUIT:
-				quit = true;
-				break;
-			default:
-				break;
-			}
-		}
 
 		SDL_Delay(1000 / server::FPS);
 	}
 
-	server::cleanUp();
+	server::sock.close();
+
+	SDLNet_Quit();
+	
+	SDL_Quit();
 	return 0;
 }

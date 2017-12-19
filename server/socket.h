@@ -22,6 +22,9 @@ static const int PACKET_SIZE = 1024;
 static const int CHECK_TIMEOUT = 1000;
 static const int CLIENT_TIMEOUT = 5000;
 
+static const uint8_t COMMAND_HANDLE = 0xec;
+static const uint8_t INPUT_HANDLE = 0xc5;
+
 class server_socket {
 public:
 	server_socket() {
@@ -67,7 +70,22 @@ private:
 
 	std::mutex c_mutex;
 
-	void received();
+	void received() {
+		std::lock_guard lock(c_mutex);
+
+		switch (pack_data[0]) {
+		case COMMAND_HANDLE:
+			parseCommand();
+			break;
+		case INPUT_HANDLE:
+			parseInput();
+			break;
+		}
+	}
+
+	void parseCommand();
+
+	void parseInput();
 
 	auto findClient();
 	void addClient();

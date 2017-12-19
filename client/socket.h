@@ -8,6 +8,7 @@
 #include <deque>
 #include <vector>
 #include <list>
+#include <string>
 
 #include "packet_data.h"
 
@@ -17,6 +18,9 @@ static const uint16_t PORT = 2345;
 static const int PACKET_SIZE = 1024;
 static const int CHECK_TIMEOUT = 1000;
 static const int CLIENT_TIMEOUT = 5000;
+
+static const uint8_t COMMAND_HANDLE = 0xec;
+static const uint8_t INPUT_HANDLE = 0xc5;
 
 class packet_joiner {
 public:
@@ -74,11 +78,11 @@ public:
 
 	void disconnect();
 
-	bool sendChar(const char c) {
-		return send(reinterpret_cast<const Uint8*>(&c), 1);
-	}
+	bool sendCommand(const std::string &cmd);
 
-	bool send(const Uint8 *data, size_t len);
+	bool sendMouse(const SDL_MouseButtonEvent &e);
+
+	bool send(packet_data data);
 
 	void run();
 	

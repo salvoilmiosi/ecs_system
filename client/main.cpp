@@ -17,6 +17,7 @@ ecs::world_in<MyComponents, MAX_ENTITIES> wld;
 socket::client_socket sock;
 
 static auto on_tick_systems = std::make_tuple(
+	ecs::system<position, generator>(particle_generator_func),
 	ecs::system<printable, position>(print_func),
 	ecs::system<position, velocity>(move_func),
 	ecs::system<velocity, acceleration>(accelerate_func),
@@ -120,7 +121,7 @@ int main (int argc, char** argv) {
 				quit = true;
 				break;
 			case SDL_MOUSEBUTTONDOWN:
-				client::sock.sendChar('s');
+				client::sock.sendMouse(event.button);
 				break;
 			default:
 				break;

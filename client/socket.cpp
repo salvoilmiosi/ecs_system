@@ -59,7 +59,7 @@ bool client_socket::connect(IPaddress addr) {
 		return false;
 	}
 
-	sendChar('c');
+	sendCommand("connect");
 
 	SDLNet_UDP_AddSocket(sock_set, sock);
 	return true;
@@ -75,35 +75,43 @@ void client_socket::close() {
 }
 
 void client_socket::disconnect() {
-	sendChar('d');
+	sendCommand("disconnect");
+
 	memset(&server_addr, 0, sizeof(server_addr));
 }
 
-bool client_socket::send(const Uint8 *data, size_t len) {
-	UDPpacket packet;
-	memset(&packet, 0, sizeof(packet));
+bool client_socket::sendCommand(const std::string &cmd) {
+	packet_data data;
+	data.push_back(COMMAND_HANDLE);
+	data.insert(data.end(), cmd.begin(), cmd.end());
+	return send(data);
+}
 
-	Uint8 data_copy[PACKET_SIZE];
+bool client_socket::sendMouse(const SDL_MouseButtonEvent &e) {
+	packet_data_out data;
+	struct {
+		uint8_t handler;
+		SDL_MouseButtonEvent mouse;
+	} s_input = {INPUT_HANDLE, e};
+	data.write(&s_input, sizeof(s_input));
+	return send(data.data());
+}
+
+bool client_socket::send(packet_data data) {
+	UDPpacket packet;
 
 	packet.channel = 0;
-	packet.data = data_copy;
+	packet.data = data.data();
 	packet.maxlen = PACKET_SIZE;
-	packet.len = len;
+	packet.len = data.size();
 
-	memset(data_copy, 0, PACKET_SIZE);
-	memcpy(data_copy, data, len);
-
-	if (!SDLNet_UDP_Send(sock, packet.channel, &packet)) {
-		std::cout << "Packet lost" << std::endl;
-		return false;
-	}
-	return true;
+	return SDLNet_UDP_Send(sock, packet.channel, &packet);
 }
 
 void client_socket::run() {
 	client_thread = std::thread([this]() {
 		while (sock) {
-			sendChar('p');
+			sendCommand("ping");
 
 			int numready = SDLNet_CheckSockets(sock_set, CHECK_TIMEOUT);
 

@@ -111,29 +111,27 @@ void server_socket::sendAll(const packet_data &data) {
 	}
 }
 
-void server_socket::received() {
-	std::lock_guard lock(c_mutex);
-
-	//std::cout << ipString(receiver.address) << ": " << pack_data << std::endl;
-	// if (strcmp(pack_data, "CONNECT") == 0) {
-
-	// testing with netcat
-	switch (pack_data[0]) {
-	case 'c': // Connect
+void server_socket::parseCommand() {
+	std::string cmd((char *)pack_data + 1);
+	if (cmd == "connect") {
 		addClient();
-		break;
-	case 's': // State
+	} else if (cmd == "state") {
 		stateClient();
-		break;
-	case 'p': // Ping
+	} else if (cmd == "ping") {
 		pingClient();
-		break;
-	case 'd': // Disconnect
+	} else if (cmd == "disconnect") {
 		delClient();
-		break;
-	default:
-		break;
 	}
+}
+
+void server_socket::parseInput() {
+	struct {
+		uint8_t handler;
+		SDL_MouseButtonEvent mouse;
+	} s_input;
+	memcpy(&s_input, pack_data, sizeof(s_input));
+
+	server::handleMouse(receiver.address, s_input.mouse);
 }
 
 auto server_socket::findClient() {

@@ -105,6 +105,11 @@ public:
 		logger.read(in);
 	}
 
+	template<typename ... Ts>
+	entity_id createEntity(Ts ... components) {
+		return SUPER::createEntity(components ...);
+	}
+
 private:
 	edit_logger<ComponentList> logger;
 
@@ -126,7 +131,7 @@ private:
 
 	template<typename ... Ts>
 	entity_id createEntity(entity_id id, Ts ... components) {
-		return local_ids[id] = SUPER::createEntity(components ...);
+		return local_ids[id] = createEntity(components ...);
 	}
 
 	template<typename ... Ts>

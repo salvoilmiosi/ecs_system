@@ -20,6 +20,8 @@ extern ecs::world_out<MyComponents, MAX_ENTITIES> wld;
 extern SDL_Window *window;
 extern SDL_Renderer *renderer;
 
+void handleMouse(IPaddress addr, SDL_MouseButtonEvent mouse);
+
 }
 
 #endif // __MAIN_H__

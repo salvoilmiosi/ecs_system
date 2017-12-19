@@ -17,7 +17,6 @@ ecs::world_out<MyComponents, MAX_ENTITIES> wld;
 socket::server_socket sock;
 
 static auto on_tick_systems = std::make_tuple(
-	ecs::system<position, generator>(particle_generator_func),
 	ecs::system<printable, position>(print_func),
 	ecs::system<position, velocity>(move_func),
 	ecs::system<velocity, acceleration>(accelerate_func),
@@ -66,12 +65,15 @@ static inline void executeAll(auto &systems) {
 	});
 }
 
+void handleMouse(IPaddress addr, SDL_MouseButtonEvent mouse) {
+	if (mouse.type == SDL_MOUSEBUTTONDOWN) {
+		wld.createEntity(position(mouse.x, mouse.y), generator(10), health(10));
+	}
+}
+
 static void init() {
 	sock.open();
 	sock.run();
-
-	wld.createEntity(position(SCREEN_W / 2.0, SCREEN_H / 2.0), generator(20));
-	wld.updateEntities();
 }
 
 static void broadcast() {

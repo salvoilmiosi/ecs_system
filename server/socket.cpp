@@ -4,6 +4,7 @@
 #include <algorithm>
 
 #include "main.h"
+#include "userinput.h"
 
 namespace socket {
 
@@ -34,19 +35,8 @@ bool server_socket::open(uint16_t port) {
 	std::cout << "Server open on port " << port << std::endl;
 
 	SDLNet_UDP_AddSocket(sock_set, sock);
-	return true;
-}
 
-void server_socket::close() {
-	if (sock) {
-		SDLNet_UDP_DelSocket(sock_set, sock);
-		SDLNet_UDP_Close(sock);
-		sock = NULL;
-	}
-}
-
-void server_socket::run() {
-	serv_thread = std::thread([this]() {
+	serv_thread = std::thread([&]() {
 		while (sock) {
 			testClients();
 
@@ -60,6 +50,18 @@ void server_socket::run() {
 			}
 		}
 	});
+	return true;
+}
+
+void server_socket::close() {
+	if (sock) {
+		SDLNet_UDP_DelSocket(sock_set, sock);
+		SDLNet_UDP_Close(sock);
+		sock = NULL;
+		if (serv_thread.joinable()) {
+			serv_thread.join();
+		}
+	}
 }
 
 void server_socket::sendTo(const packet_data &data, IPaddress addr) {
@@ -112,6 +114,12 @@ void server_socket::sendAll(const packet_data &data) {
 	}
 }
 
+auto server_socket::findClient() {
+	return std::find_if(clients_connected.begin(), clients_connected.end(), [this](auto &c) {
+		return c.address == receiver.address;
+	});
+}
+
 void server_socket::parseCommand() {
 	std::string cmd((char *)pack_data + 1);
 	if (cmd == "connect") {
@@ -128,17 +136,21 @@ void server_socket::parseCommand() {
 void server_socket::parseInput() {
 	struct {
 		uint8_t handler;
-		SDL_MouseButtonEvent mouse;
+		SDL_Event event;
 	} s_input;
 	memcpy(&s_input, pack_data, sizeof(s_input));
 
-	server::handleMouse(receiver.address, s_input.mouse);
-}
-
-auto server_socket::findClient() {
-	return std::find_if(clients_connected.begin(), clients_connected.end(), [this](auto &c) {
-		return c.address == receiver.address;
-	});
+	if (auto it = findClient(); it != clients_connected.end()) {
+		switch (s_input.event.type) {
+		case SDL_MOUSEBUTTONDOWN:
+		case SDL_MOUSEBUTTONUP:
+			it->input.handleMouseButton(s_input.event.button);
+			break;
+		case SDL_MOUSEMOTION:
+			it->input.handleMouseMotion(s_input.event.motion);
+			break;
+		}
+	}
 }
 
 void server_socket::addClient() {

@@ -87,11 +87,11 @@ bool client_socket::sendCommand(const std::string &cmd) {
 	return send(data);
 }
 
-bool client_socket::sendMouse(const SDL_MouseButtonEvent &e) {
+bool client_socket::sendEvent(const SDL_Event &e) {
 	packet_data_out data;
 	struct {
 		uint8_t handler;
-		SDL_MouseButtonEvent mouse;
+		SDL_Event event;
 	} s_input = {INPUT_HANDLE, e};
 	data.write(&s_input, sizeof(s_input));
 	return send(data.data());
@@ -109,7 +109,7 @@ bool client_socket::send(packet_data data) {
 }
 
 void client_socket::run() {
-	client_thread = std::thread([this]() {
+	client_thread = std::thread([&]() {
 		while (sock) {
 			sendCommand("ping");
 

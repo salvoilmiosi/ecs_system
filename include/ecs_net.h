@@ -32,9 +32,15 @@ public:
 	}
 
 	template<typename ... Ts>
-	void createEntity(Ts ... components) {
+	entity_id createEntity(Ts ... components) {
 		entity_id ent = SUPER::createEntity(components ...);
 		logComponents<Ts ...>(ent, EDIT_CREATE);
+		return ent;
+	}
+
+	void removeEntity(entity_id ent) {
+		SUPER::removeEntity(ent);
+		logMask(ent);
 	}
 
 	edit_logger<ComponentList> logState();

@@ -1,5 +1,5 @@
-export CFLAGS = -g -Wall --std=c++1z `sdl2-config --cflags`
-export LIBS = `sdl2-config --libs` -lSDL2_net -lpthread
+export CFLAGS = -g -Wall --std=c++1z
+export LIBS = -lmingw32 -lSDL2main -lSDL2 -lSDL2_net -lpthread
 
 ifeq ($(OS),Windows_NT)
 	MAKE := mingw32-make

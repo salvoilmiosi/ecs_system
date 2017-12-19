@@ -114,15 +114,15 @@ void edit_logger<ComponentList>::read(packet_data_in &in) {
 		CHECK_CHAR('M');
 		edit.mask = readBinary<uint64_t>(in);
 
-		if (edit.type == EDIT_MASK) continue;
-
-		mpl::for_each_in_tuple(edit.data, [&](auto &comp) {
-			auto c_mask = world<ComponentList>::template generateMask<typename std::remove_reference<decltype(comp)>::type> ();
-			if ((edit.mask & c_mask) == c_mask) {
-				CHECK_CHAR('C');
-				readBinary(comp, in);
-			}
-		});
+		if (edit.type != EDIT_MASK) {
+			mpl::for_each_in_tuple(edit.data, [&](auto &comp) {
+				auto c_mask = world<ComponentList>::template generateMask<typename std::remove_reference<decltype(comp)>::type> ();
+				if ((edit.mask & c_mask) == c_mask) {
+					CHECK_CHAR('C');
+					readBinary(comp, in);
+				}
+			});
+		}
 
 		add(edit);
 	}

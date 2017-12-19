@@ -8,6 +8,7 @@
 #include <list>
 
 #include "packet_data.h"
+#include "userinput.h"
 
 namespace socket {
 
@@ -39,14 +40,11 @@ public:
 
 	~server_socket() {
 		close();
-		serv_thread.join();
 	}
 
 	bool open(uint16_t port = PORT);
 
 	void close();
-
-	void run();
 
 	void sendTo(const packet_data &packet, IPaddress addr);
 	void sendAll(const packet_data &packet);
@@ -64,6 +62,7 @@ private:
 	struct client_info {
 		IPaddress address;
 		Uint32 last_seen;
+		userinput input;
 	};
 
 	std::list<client_info> clients_connected;
@@ -83,11 +82,11 @@ private:
 		}
 	}
 
-	void parseCommand();
+	auto findClient();
 
+	void parseCommand();
 	void parseInput();
 
-	auto findClient();
 	void addClient();
 	void stateClient();
 	void pingClient();

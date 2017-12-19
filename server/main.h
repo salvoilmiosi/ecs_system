@@ -9,13 +9,11 @@
 
 namespace server {
 
-static const int FPS = 60;
+static const int TICKRATE = 60;
 
 static const int MAX_ENTITIES = ecs::MAX_ENTITIES_DEFAULT;
 
 extern ecs::world_out<MyComponents, MAX_ENTITIES> wld;
-
-void handleMouse(IPaddress addr, SDL_MouseButtonEvent mouse);
 
 }
 

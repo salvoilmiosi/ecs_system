@@ -1,8 +1,10 @@
 #include "main.h"
 
-#include "systems.h"
+#include <thread>
 
+#include "systems.h"
 #include "socket.h"
+#include "timer.h"
 
 namespace server {
 
@@ -24,12 +26,6 @@ static inline void executeAll(auto &systems) {
 	});
 }
 
-void handleMouse(IPaddress addr, SDL_MouseButtonEvent mouse) {
-	if (mouse.type == SDL_MOUSEBUTTONDOWN) {
-		wld.createEntity(position(mouse.x, mouse.y), generator(50), health(1));
-	}
-}
-
 static void tick() {
 	executeAll(on_tick_systems);
 
@@ -41,6 +37,16 @@ static void tick() {
 	sock.sendAll(packet.data());
 }
 
+static std::thread cmdline;
+
+static bool quit = false;
+
+void command(std::string cmd) {
+	if (cmd == "quit") {
+		quit = true;
+	}
+}
+
 }
 
 int main (int argc, char** argv) {
@@ -50,20 +56,34 @@ int main (int argc, char** argv) {
 	if (SDLNet_Init() == -1)
 		return 2;
 
-	server::sock.open();
-	server::sock.run();
+	if (!server::sock.open())
+		return 3;
 
-	bool quit = false;
-	while(!quit) {
+	server::cmdline = std::thread([&]() {
+		std::string line;
+		while (!server::quit) {
+			std::getline(std::cin, line);
+
+			server::command(line);
+		}
+	});
+
+	timer fps;
+
+	while(!server::quit) {
+		fps.start();
+
 		server::tick();
 
-		SDL_Delay(1000 / server::FPS);
+		if (fps.get_ticks() < 1000 / server::TICKRATE) {
+			SDL_Delay(1000 / server::TICKRATE - fps.get_ticks());
+		}
 	}
 
 	server::sock.close();
+	server::cmdline.join();
 
 	SDLNet_Quit();
-	
 	SDL_Quit();
 	return 0;
 }

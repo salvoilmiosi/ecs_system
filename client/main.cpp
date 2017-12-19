@@ -1,8 +1,8 @@
 #include "main.h"
 
 #include "systems.h"
-
 #include "socket.h"
+#include "timer.h"
 
 namespace client {
 
@@ -105,8 +105,12 @@ int main (int argc, char** argv) {
 
 	client::init();
 
+	timer fps;
+
 	bool quit = false;
 	while(!quit) {
+		fps.start();
+
 		SDL_SetRenderDrawColor(client::renderer, 0x0, 0x0, 0x0, 0xff);
 		SDL_RenderClear(client::renderer);
 
@@ -119,14 +123,18 @@ int main (int argc, char** argv) {
 				quit = true;
 				break;
 			case SDL_MOUSEBUTTONDOWN:
-				client::sock.sendMouse(event.button);
+			case SDL_MOUSEMOTION:
+			case SDL_MOUSEBUTTONUP:
+				client::sock.sendEvent(event);
 				break;
 			default:
 				break;
 			}
 		}
 
-		SDL_Delay(1000 / client::FPS);
+		if (fps.get_ticks() < 1000 / client::FPS) {
+			SDL_Delay(1000 / client::FPS - fps.get_ticks());
+		}
 	}
 
 	client::cleanUp();

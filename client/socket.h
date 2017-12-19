@@ -80,7 +80,7 @@ public:
 
 	bool sendCommand(const std::string &cmd);
 
-	bool sendMouse(const SDL_MouseButtonEvent &e);
+	bool sendEvent(const SDL_Event &e);
 
 	bool send(packet_data data);
 

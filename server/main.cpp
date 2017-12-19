@@ -70,7 +70,7 @@ static void init() {
 	sock.open();
 	sock.run();
 
-	wld.createEntity(position(SCREEN_W / 2.0, SCREEN_H / 2.0), generator(1));
+	wld.createEntity(position(SCREEN_W / 2.0, SCREEN_H / 2.0), generator(20));
 	wld.updateEntities();
 }
 

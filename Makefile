@@ -7,7 +7,7 @@ else
 	MAKE := make
 endif
 
-all: client
+all: client server
 
 server:
 	$(MAKE) -f Makefile.generic "OUT=ecs_system_server" "SRC=server"

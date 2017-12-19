@@ -70,17 +70,16 @@ static void init() {
 	sock.open();
 	sock.run();
 
-	wld.createEntity(position(SCREEN_W / 2.0, SCREEN_H / 2.0), generator(10));
+	wld.createEntity(position(SCREEN_W / 2.0, SCREEN_H / 2.0), generator(1));
 	wld.updateEntities();
 }
 
 static void broadcast() {
-	std::ostringstream oss(std::ios::out | std::ios::binary);
+	packet_data_out packet;
 
-	wld.flushLog(oss);
+	wld.flushLog(packet);
 
-	std::string packet = oss.str();
-	sock.sendAll((Uint8 *)packet.data(), packet.size());
+	sock.sendAll(packet.data());
 }
 
 static void tick() {
@@ -94,7 +93,6 @@ static void render() {
 	executeAll(on_draw_systems);
 	SDL_RenderPresent(renderer);
 }
-
 
 }
 

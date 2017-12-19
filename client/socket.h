@@ -9,6 +9,8 @@
 #include <vector>
 #include <list>
 
+#include "packet_data.h"
+
 namespace socket {
 
 static const uint16_t PORT = 2345;
@@ -31,12 +33,12 @@ public:
 private:
 	struct packet {
 		struct {
-			Uint32 time;
+			Uint32 pid;
 			Uint8 count;
 			Uint8 slices;
 		} header;
 		Uint32 time_added;
-		Uint8 data[PACKET_SIZE];
+		packet_data data;
 		size_t len;
 	};
 
@@ -44,11 +46,11 @@ private:
 
 	typedef std::list<packet>::iterator packet_it;
 
-	std::deque<std::string> joined;
+	std::deque<packet_data> joined;
 
 	void findJoin(Uint32 time);
 
-	void join(std::vector<packet_it> &sameTime);
+	void join(std::vector<packet_it> &sameId);
 };
 
 class client_socket {

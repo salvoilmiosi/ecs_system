@@ -51,6 +51,8 @@ static bool initSDL() {
 }
 
 static void cleanUp() {
+	sock.close();
+	
 	SDL_DestroyRenderer(renderer);
 	SDLNet_Quit();
 	SDL_Quit();
@@ -72,9 +74,12 @@ static void init() {
 
 static void readPackets() {
 	sock.forEachPacket([](auto &x) {
-		std::istringstream in(x, std::ios::in | std::ios::binary);
-
-		wld.readLog(in);
+		packet_data_in pdi(x);
+		try {
+			wld.readLog(pdi);
+		} catch (std::invalid_argument &err) {
+			std::cerr << "Broken packet: " << err.what() << std::endl;
+		}
 	});
 
 	wld.applyEdits();

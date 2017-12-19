@@ -10,40 +10,39 @@ void packet_joiner::add(UDPpacket pack) {
 	p.len = pack.len - sizeof(p.header);
 	p.time_added = SDL_GetTicks();
 
-	memset(p.data, 0, PACKET_SIZE);
-	memcpy(&p.header, pack.data, sizeof(p.header));
-	memcpy(p.data, pack.data + sizeof(p.header), p.len);
+	std::copy(pack.data, pack.data + sizeof(p.header), reinterpret_cast<uint8_t *>(&p.header));
+	p.data.assign(pack.data + sizeof(p.header), pack.data + pack.len);
 
 	packets.push_front(p);
 
-	findJoin(p.header.time);
+	findJoin(p.header.pid);
 
 	if (!packets.empty() && SDL_GetTicks() - packets.back().time_added > CLIENT_TIMEOUT) {
 		packets.pop_back();
 	}
 }
 
-void packet_joiner::findJoin(Uint32 time) {
-	std::vector<packet_it> sameTime;
+void packet_joiner::findJoin(Uint32 pid) {
+	std::vector<packet_it> sameId;
 	for (auto it = packets.begin(); it != packets.end(); ++it) {
-		if (it->header.time == time) {
-			sameTime.push_back(it);
-			if (sameTime.size() >= it->header.slices) {
-				join(sameTime);
+		if (it->header.pid == pid) {
+			sameId.push_back(it);
+			if (sameId.size() >= it->header.slices) {
+				join(sameId);
 				break;
 			}
 		}
 	}
 }
 
-void packet_joiner::join(std::vector<packet_it> &sameTime) {
-	std::sort(sameTime.begin(), sameTime.end(), [](auto &a, auto &b) {
+void packet_joiner::join(std::vector<packet_it> &sameId) {
+	std::sort(sameId.begin(), sameId.end(), [](auto &a, auto &b) {
 		return a->header.count < b->header.count;
 	});
 
-	std::string data;
-	for (auto &x : sameTime) {
-		data.append((char *)x->data, x->len);
+	packet_data data;
+	for (auto &x : sameId) {
+		data.insert(data.end(), x->data.begin(), x->data.end());
 		packets.erase(x);
 	}
 	joined.push_back(data);
@@ -104,9 +103,9 @@ bool client_socket::send(const Uint8 *data, size_t len) {
 void client_socket::run() {
 	client_thread = std::thread([this]() {
 		while (sock) {
-			int numready = SDLNet_CheckSockets(sock_set, CHECK_TIMEOUT);
-
 			sendChar('p');
+
+			int numready = SDLNet_CheckSockets(sock_set, CHECK_TIMEOUT);
 
 			if (numready > 0) {
 				memset(pack_data, 0, PACKET_SIZE);

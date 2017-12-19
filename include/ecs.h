@@ -55,12 +55,12 @@ protected:
 
 private:
 	template<typename T>
-	constexpr T or_all(const T &obj) {
+	constexpr static T or_all(const T &obj) {
 		return obj;
 	}
 
 	template<typename T, typename ... Ts>
-	constexpr T or_all(const T &first, const Ts& ... then) {
+	constexpr static T or_all(const T &first, const Ts& ... then) {
 		return first | or_all(then ...);
 	}
 
@@ -76,7 +76,7 @@ private:
 
 public:
 	template<typename ... Ts>
-	constexpr component_mask generateMask() {
+	constexpr static component_mask generateMask() {
 		static_assert(areAllComponents<Ts ...>());
 		return or_all(component_mask(1) << mpl::IndexOf<Ts, ComponentList>::value ...);
 	}

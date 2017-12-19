@@ -55,27 +55,27 @@ void server_socket::run() {
 				memset(pack_data, 0, PACKET_SIZE);
 				if (SDLNet_UDP_Recv(sock, &receiver)) {
 					received();
-				} else {
-					// Server disconnected
-					break;
 				}
 			}
 		}
 	});
 }
 
-void server_socket::sendTo(Uint8 *data_ptr, int len, IPaddress addr) {
+void server_socket::sendTo(const packet_data &data, IPaddress addr) {
 	Uint8 data_copy[PACKET_SIZE];
 
 	// Divide the packet in PACKET_SIZE sized slices.
 	// Add a header to all packets so they can be reconstructed in order when received
 	struct {
-		Uint32 time;
+		Uint32 pid;
 		Uint8 count;
 		Uint8 slices;
 	} header;
 
-	header.time = SDL_GetTicks();
+	const uint8_t *data_ptr = data.data();
+	int len = data.size();
+
+	header.pid = maxPid++;
 	header.count = 0;
 	header.slices = len / (PACKET_SIZE - sizeof(header)) + 1;
 
@@ -97,17 +97,17 @@ void server_socket::sendTo(Uint8 *data_ptr, int len, IPaddress addr) {
 			std::cout << "Lost packet" << std::endl;
 		}
 
-		data_ptr += PACKET_SIZE;
+		data_ptr += PACKET_SIZE - sizeof(header);
 		len -= PACKET_SIZE - sizeof(header);
 
 		++header.count;
 	}
 }
 
-void server_socket::sendAll(Uint8 *data_ptr, int len) {
+void server_socket::sendAll(const packet_data &data) {
 	std::lock_guard lock(c_mutex);
 	for (auto &c : clients_connected) {
-		sendTo(data_ptr, len, c.address);
+		sendTo(data, c.address);
 	}
 }
 
@@ -152,22 +152,18 @@ void server_socket::addClient() {
 		clients_connected.push_back(c);
 		std::cout << ipString(receiver.address) << " connected" << std::endl;
 
-		//stateClient();
+		stateClient();
 
 		//SDLNet_UDP_Bind(sock, 0, &c.address);
 	}
 }
 
 void server_socket::stateClient() {
-	std::ostringstream oss(std::ios::out | std::ios::binary);
+	packet_data_out packet;
 
-	auto logger = server::wld.logState();
-	logger.flush(oss);
-
-	std::string packet = oss.str();
-
-	std::cout << "State sent: " << packet.size() << " bytes" << std::endl;
-	sendTo((Uint8 *)packet.data(), packet.size(), receiver.address);
+	server::wld.logState().write(packet);
+	
+	sendTo(packet.data(), receiver.address);
 }
 
 void server_socket::pingClient() {

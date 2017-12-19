@@ -7,6 +7,8 @@
 #include <mutex>
 #include <list>
 
+#include "packet_data.h"
+
 namespace socket {
 
 const char *ipString(const IPaddress &ip);
@@ -43,8 +45,8 @@ public:
 
 	void run();
 
-	void sendTo(Uint8 *data_ptr, int len, IPaddress addr);
-	void sendAll(Uint8 *data_ptr, int len);
+	void sendTo(const packet_data &packet, IPaddress addr);
+	void sendAll(const packet_data &packet);
 
 private:
 	UDPsocket sock = NULL;
@@ -54,6 +56,7 @@ private:
 
 	UDPpacket receiver;
 	Uint8 pack_data[PACKET_SIZE];
+	Uint32 maxPid;
 
 	struct client_info {
 		IPaddress address;

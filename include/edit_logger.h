@@ -5,9 +5,9 @@
 #include <iostream>
 #include <bitset>
 #include <tuple>
-#include <cassert>
 
 #include "mpl.h"
+#include "packet_data.h"
 
 namespace ecs {
 
@@ -45,89 +45,115 @@ public:
 		edits.push_back(edit);
 	}
 
-	void read(std::istream &in) {
-		while (!in.eof()) {
-			auto edit = create();
-			assert(readBinary<char>(in) == 'T');
-			edit.type = static_cast<edit_type>(readBinary<uint8_t>(in));
-
-			if (edit.type == EDIT_NONE) continue;
-
-			assert(readBinary<char>(in) == 'I');
-			readBinary<uint64_t>(edit.id, in);
-
-			assert(readBinary<char>(in) == 'M');
-			edit.mask = readBinary<uint64_t>(in);
-
-			if (edit.type == EDIT_MASK) continue;
-
-			size_t i = 0;
-			mpl::for_each_in_tuple(edit.data, [&](auto &comp) {
-				if (edit.mask.test(i)) {
-					assert(readBinary<char>(in) == 'C');
-					readBinary(comp, in);
-				}
-				++i;
-			});
-
-			add(edit);
-		}
-	}
+	void read(packet_data_in &in);
 
 	// iterates over the deque while clearing it
 	template<typename Func>
 	void forEachEdit(Func func) {
 		while (!edits.empty()) {
 			auto &obj = edits.front();
-			if (obj.type != EDIT_NONE) {
-				func(obj);
-			}
+			func(obj);
 			edits.pop_front();
 		}
 	}
 
-	void flush(std::ostream &out) {
-		forEachEdit([&](auto &obj){
-			writeBinary('T', out);
-			writeBinary<uint8_t>(obj.type, out);
-			writeBinary('I', out);
-			writeBinary<uint64_t>(obj.id, out);
-			writeBinary('M', out);
-			writeBinary<uint64_t>(obj.mask.to_ullong(), out);
-
-			if (obj.type != EDIT_MASK) {
-				size_t i = 0;
-				mpl::for_each_in_tuple(obj.data, [&](auto &comp) {
-					if (obj.mask.test(i)) {
-						writeBinary('C', out);
-						writeBinary(comp, out);
-					}
-					++i;
-				});
-			}
-		});
-	}
+	void write(packet_data_out &out);
 
 private:
 	std::deque<entity_edit> edits;
 
 	template<typename T>
-	void writeBinary(const T& obj, std::ostream &out) {
-		out.write(reinterpret_cast<const char *>(&obj), sizeof(T));
+	void writeBinary(const T& obj, packet_data_out &out) {
+		out.write(&obj, sizeof(T));
 	}
 
 	template<typename T>
-	void readBinary(T &obj, std::istream &in) {
-		in.read(reinterpret_cast<char *>(&obj), sizeof(T));
+	void readBinary(T &obj, packet_data_in &in) {
+		in.read(&obj, sizeof(T));
 	}
 
 	template<typename T>
-	T readBinary(std::istream &in) {
+	T readBinary(packet_data_in &in) {
 		T obj;
 		readBinary(obj, in);
 		return obj;
 	}
 };
+
+class syntax_error : public std::invalid_argument {
+public:
+	syntax_error(char expected, char got, packet_data_in &in) :
+		std::invalid_argument(msg(expected, got, in.at() - 1)) {}
+
+private:
+	std::string msg(char expected, char got, size_t at) {
+		std::string str = "Syntax error: expected ";
+		str += expected;
+		str += " in position ";
+		str += std::to_string(at);
+		str += ", got ";
+		str += got;
+		return str;
+	}
+};
+
+#define CHECK_CHAR(x) if (char got = readBinary<char>(in); got != x) throw syntax_error(x, got, in)
+
+template<typename ComponentList>
+void edit_logger<ComponentList>::read(packet_data_in &in) {
+	while (! in.eof()) {
+		auto edit = create();
+		CHECK_CHAR('T');
+		edit.type = static_cast<edit_type>(readBinary<uint8_t>(in));
+
+		if (edit.type == EDIT_NONE) continue;
+		CHECK_CHAR('I');
+		
+		readBinary<uint64_t>(edit.id, in);
+
+		CHECK_CHAR('M');
+		edit.mask = readBinary<uint64_t>(in);
+
+		if (edit.type == EDIT_MASK) continue;
+
+		mpl::for_each_in_tuple(edit.data, [&](auto &comp) {
+			auto c_mask = world<ComponentList>::template generateMask<typename std::remove_reference<decltype(comp)>::type> ();
+			if ((edit.mask & c_mask) == c_mask) {
+				CHECK_CHAR('C');
+				readBinary(comp, in);
+			}
+		});
+
+		add(edit);
+	}
+}
+
+#undef CHECK_CHAR
+
+template<typename ComponentList>
+void edit_logger<ComponentList>::write(packet_data_out &out) {
+	forEachEdit([&](auto &edit){
+		writeBinary('T', out);
+		writeBinary<uint8_t>(edit.type, out);
+
+		if (edit.type == EDIT_NONE) return;
+
+		writeBinary('I', out);
+		writeBinary<uint64_t>(edit.id, out);
+		writeBinary('M', out);
+		writeBinary<uint64_t>(edit.mask.to_ullong(), out);
+
+		if (edit.type == EDIT_MASK) return;
+
+		mpl::for_each_in_tuple(edit.data, [&](auto &comp) {
+			auto c_mask = world<ComponentList>::template generateMask<typename std::remove_reference<decltype(comp)>::type> ();
+			if ((edit.mask & c_mask) == c_mask) {
+				writeBinary('C', out);
+				writeBinary(comp, out);
+			}
+		});
+	});
+}
 
 }
 

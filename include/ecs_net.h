@@ -4,6 +4,7 @@
 #include "ecs.h"
 
 #include "edit_logger.h"
+#include "packet_data.h"
 
 namespace ecs {
 
@@ -38,8 +39,8 @@ public:
 
 	edit_logger<ComponentList> logState();
 
-	void flushLog(std::ostream &out) {
-		logger.flush(out);
+	void flushLog(packet_data_out &out) {
+		logger.write(out);
 	}
 
 private:
@@ -100,7 +101,7 @@ class world_in : public world<ComponentList, MaxEntities> {
 public:
 	void applyEdits();
 
-	void readLog(std::istream &in) {
+	void readLog(packet_data_in &in) {
 		logger.read(in);
 	}
 
@@ -111,12 +112,12 @@ private:
 
 	typedef typename SUPER::component_mask component_mask;
 
-	auto &remoteEntity(entity_id remote_id) {
-		return this->entity_list[local_ids[remote_id]];
+	entity_id remoteEntity(entity_id remote_id) {
+		return local_ids[remote_id];
 	}
 
 	void setMask(entity_id id, component_mask mask) {
-		auto &ent = remoteEntity(id);
+		auto &ent = SUPER::entity_list[remoteEntity(id)];
 		ent.mask = mask;
 		if (mask.none()) {
 			ent.alive = false;
@@ -130,7 +131,7 @@ private:
 
 	template<typename ... Ts>
 	void stateEntity(entity_id id) {
-		auto &ent = remoteEntity(id);
+		auto &ent = SUPER::entity_list[remoteEntity(id)];
 		if (ent.alive) {
 			ent.mask.reset();
 		} else {
@@ -140,21 +141,20 @@ private:
 
 	template<typename T>
 	void addComponent(entity_id id, T component) {
-		SUPER::addComponent(local_ids[id], component);
+		SUPER::addComponent(remoteEntity(id), component);
 	}
 
 	template<typename ... Ts>
 	void addComponents(entity_id id, Ts ... components) {
-		SUPER::addComponents(local_ids[id], components ...);
+		SUPER::addComponents(remoteEntity(id), components ...);
 	}
 
 	void editHelper(auto &edit) {
-		size_t i = 0;
 		mpl::for_each_in_tuple(edit.data, [&](auto &comp) {
-			if (edit.mask.test(i)) {
+			component_mask c_mask = SUPER::template generateMask<typename std::remove_reference<decltype(comp)>::type> ();
+			if ((edit.mask & c_mask) == c_mask) {
 				addComponent(edit.id, comp);
 			}
-			++i;
 		});
 	}
 };
@@ -183,56 +183,6 @@ void world_in<ComponentList, MaxEntities>::applyEdits() {
 		}
 	});
 }
-// template<typename ComponentList, size_t MaxEntities>
-// void world_in<ComponentList, MaxEntities>::applyEdits() {
-// 	logger.forEachEdit([this](auto &edit) {
-// 		bool skip_create = false;
-// 		switch (edit.type) {
-// 		case EDIT_MASK:
-// 			entity_list[edit.id].mask = edit.mask;
-// 			if (edit.mask.none()) {
-// 				entity_list[edit.id].alive = false;
-// 			}
-// 			break;
-// 		case EDIT_STATE:
-// 			// Create the entity if it doesn't exist
-// 			// Else just add the components
-// 			if (entity_list[edit.id].alive) {
-// 				entity_list[edit.id].mask.reset();
-// 				skip_create = true;
-// 			}
-// 		// fall through
-// 		case EDIT_CREATE:
-// 			if (!skip_create) {
-// 				while (nextSize >= capacity) {
-// 					growContainers();
-// 				}
-
-// 				entity_id_list[nextSize] = edit.id;
-// 				entity_list[edit.id].alive = true;
-// 				entity_list[edit.id].mask.reset();
-
-// 				++nextSize;
-// 			}
-// 		// fall through
-// 		case EDIT_ADD:
-// 		{
-// 			entity_list[edit.id].mask |= edit.mask;
-
-// 			size_t i = 0;
-// 			mpl::for_each_in_2_tuples(edit.data, component_data, [&](auto &c1, auto &c2) {
-// 				if (edit.mask.test(i)) {
-// 					c2[edit.id] = c1;
-// 				}
-// 				++i;
-// 			});
-// 			break;
-// 		}
-// 		default:
-// 			break;
-// 		}
-// 	});
-// }
 
 #undef SUPER
 

@@ -21,8 +21,6 @@ enum edit_type {
 template<typename ComponentList>
 class edit_logger {
 public:
-	const bool input;
-
 	typedef size_t entity_id;
 	typedef std::bitset<ComponentList::size> edit_mask;
 
@@ -37,8 +35,6 @@ public:
 		edit_mask mask;
 		edit_data data;
 	};
-
-	explicit edit_logger(bool input = false) : input(input) {}
 
 	entity_edit create() {
 		return entity_edit();
@@ -58,8 +54,6 @@ public:
 
 			readBinary<char>(in); // 'I'
 			readBinary<uint64_t>(edit.id, in);
-
-			if (input) edit.id = (edit.id << 1) | 1; // use odd ids for remote entities
 
 			readBinary<char>(in); // 'M'
 			edit.mask = readBinary<uint64_t>(in);

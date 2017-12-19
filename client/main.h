@@ -4,7 +4,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_net.h>
 
-#include "ecs.h"
+#include "ecs_net.h"
 #include "components.h"
 
 namespace client {
@@ -15,7 +15,7 @@ static const int FPS = 60;
 
 static const int MAX_ENTITIES = ecs::MAX_ENTITIES_DEFAULT;
 
-extern ecs::world<MyComponents, MAX_ENTITIES> wld;
+extern ecs::world_in<MyComponents, MAX_ENTITIES> wld;
 
 extern SDL_Window *window;
 extern SDL_Renderer *renderer;

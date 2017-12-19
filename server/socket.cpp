@@ -2,6 +2,9 @@
 
 #include <iostream>
 #include <algorithm>
+#include <sstream>
+
+#include "main.h"
 
 namespace socket {
 
@@ -61,9 +64,7 @@ void server_socket::run() {
 	});
 }
 
-void server_socket::sendAll(Uint8 *data_ptr, int len) {
-	std::lock_guard lock(c_mutex);
-
+void server_socket::sendTo(Uint8 *data_ptr, int len, IPaddress addr) {
 	Uint8 data_copy[PACKET_SIZE];
 
 	// Divide the packet in PACKET_SIZE sized slices.
@@ -91,16 +92,22 @@ void server_socket::sendAll(Uint8 *data_ptr, int len) {
 		memcpy(data_copy, &header, sizeof(header));
 		memcpy(data_copy + sizeof(header), data_ptr, packet.len - sizeof(header));
 
-		for (auto &c : clients_connected) {
-			packet.address = c.address;
-			if (!SDLNet_UDP_Send(sock, packet.channel, &packet)) {
-				std::cout << "Lost packet" << std::endl;
-			}
+		packet.address = addr;
+		if (!SDLNet_UDP_Send(sock, packet.channel, &packet)) {
+			std::cout << "Lost packet" << std::endl;
 		}
+
 		data_ptr += PACKET_SIZE;
 		len -= PACKET_SIZE - sizeof(header);
 
 		++header.count;
+	}
+}
+
+void server_socket::sendAll(Uint8 *data_ptr, int len) {
+	std::lock_guard lock(c_mutex);
+	for (auto &c : clients_connected) {
+		sendTo(data_ptr, len, c.address);
 	}
 }
 
@@ -114,6 +121,9 @@ void server_socket::received() {
 	switch (pack_data[0]) {
 	case 'c': // Connect
 		addClient();
+		break;
+	case 's': // State
+		stateClient();
 		break;
 	case 'p': // Ping
 		pingClient();
@@ -142,8 +152,22 @@ void server_socket::addClient() {
 		clients_connected.push_back(c);
 		std::cout << ipString(receiver.address) << " connected" << std::endl;
 
+		//stateClient();
+
 		//SDLNet_UDP_Bind(sock, 0, &c.address);
 	}
+}
+
+void server_socket::stateClient() {
+	std::ostringstream oss(std::ios::out | std::ios::binary);
+
+	auto logger = server::wld.logState();
+	logger.flush(oss);
+
+	std::string packet = oss.str();
+
+	std::cout << "State sent: " << packet.size() << " bytes" << std::endl;
+	sendTo((Uint8 *)packet.data(), packet.size(), receiver.address);
 }
 
 void server_socket::pingClient() {

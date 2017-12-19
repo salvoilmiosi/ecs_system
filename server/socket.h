@@ -43,6 +43,7 @@ public:
 
 	void run();
 
+	void sendTo(Uint8 *data_ptr, int len, IPaddress addr);
 	void sendAll(Uint8 *data_ptr, int len);
 
 private:
@@ -67,6 +68,7 @@ private:
 
 	auto findClient();
 	void addClient();
+	void stateClient();
 	void pingClient();
 	void delClient();
 

@@ -12,7 +12,7 @@ SDL_Window *window;
 
 SDL_Renderer *renderer;
 
-ecs::world<MyComponents, MAX_ENTITIES> wld;
+ecs::world_out<MyComponents, MAX_ENTITIES> wld;
 
 socket::server_socket sock;
 
@@ -36,7 +36,7 @@ static bool initSDL() {
 	if (SDLNet_Init() == -1)
 		return false;
 
-	window = SDL_CreateWindow("Sistema ECS",
+	window = SDL_CreateWindow("Sistema ECS - Server",
 		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
 		SCREEN_W, SCREEN_H, SDL_WINDOW_SHOWN);
 	if (window == NULL)

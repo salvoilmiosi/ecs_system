@@ -12,7 +12,7 @@ SDL_Window *window;
 
 SDL_Renderer *renderer;
 
-ecs::world<MyComponents, MAX_ENTITIES> wld(true);
+ecs::world_in<MyComponents, MAX_ENTITIES> wld;
 
 socket::client_socket sock;
 
@@ -35,7 +35,7 @@ static bool initSDL() {
 	if (SDLNet_Init() == -1)
 		return false;
 
-	window = SDL_CreateWindow("Sistema ECS",
+	window = SDL_CreateWindow("Sistema ECS - Client",
 		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
 		SCREEN_W, SCREEN_H, SDL_WINDOW_SHOWN);
 	if (window == NULL)
@@ -115,7 +115,7 @@ int main (int argc, char** argv) {
 				quit = true;
 				break;
 			case SDL_MOUSEBUTTONDOWN:
-				client::sock.sendChar('c');
+				client::sock.sendChar('s');
 				break;
 			default:
 				break;

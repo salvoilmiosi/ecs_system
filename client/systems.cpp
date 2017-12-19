@@ -2,6 +2,7 @@
 
 #include "main.h"
 
+#include <iostream>
 #include <cstdlib>
 
 void print_func(ecs::entity_id me, printable &p, position &pos) {

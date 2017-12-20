@@ -10,12 +10,18 @@ SRC ?= src
 OUT ?= out
 INC_DIR ?= include
 BIN_DIR ?= bin
+BUILD ?= 
+
+OBJ_DIR = obj/$(SRC)
 
 ifeq ($(OS),Windows_NT)
 	OUT := $(OUT).exe
 endif
 
-OBJ_DIR = obj/$(SRC)
+ifdef BUILD
+	BIN_DIR := $(BUILD)/$(BIN_DIR)
+	OBJ_DIR := $(BUILD)/$(OBJ_DIR)
+endif
 
 $(shell mkdir -p $(BIN_DIR) >/dev/null)
 $(shell mkdir -p $(OBJ_DIR) >/dev/null)

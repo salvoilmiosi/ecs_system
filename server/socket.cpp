@@ -58,9 +58,9 @@ void server_socket::close() {
 		SDLNet_UDP_DelSocket(sock_set, sock);
 		SDLNet_UDP_Close(sock);
 		sock = NULL;
-		if (serv_thread.joinable()) {
-			serv_thread.join();
-		}
+	}
+	if (serv_thread.joinable()) {
+		serv_thread.join();
 	}
 }
 

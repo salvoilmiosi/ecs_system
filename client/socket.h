@@ -68,13 +68,10 @@ public:
 	}
 
 	~client_socket() {
-		close();
-		client_thread.join();
+		disconnect();
 	}
 
 	bool connect(IPaddress addr);
-
-	void close();
 
 	void disconnect();
 

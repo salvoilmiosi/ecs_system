@@ -50,8 +50,6 @@ static bool initSDL() {
 }
 
 static void cleanUp() {
-	sock.close();
-	
 	SDL_DestroyRenderer(renderer);
 	SDLNet_Quit();
 	SDL_Quit();
@@ -61,14 +59,6 @@ static inline void executeAll(auto &systems) {
 	mpl::for_each_in_tuple(systems, [](auto &x) {
 		x.execute(wld);
 	});
-}
-
-static void init() {
-	IPaddress addr;
-	SDLNet_ResolveHost(&addr, "localhost", socket::PORT);
-	sock.connect(addr);
-
-	sock.run();
 }
 
 static void readPackets() {
@@ -99,14 +89,25 @@ static void render() {
 }
 
 int main (int argc, char** argv) {
-	if (!client::initSDL()) return 1;
+	if (! client::initSDL()) {
+		return 1;
+	}
 
-	SDL_Event event;
+	const char *addr_str = (argc > 1) ? argv[1] : "localhost";
 
-	client::init();
+	IPaddress addr;
+	if (SDLNet_ResolveHost(&addr, addr_str, socket::PORT)) {
+		std::cout << "Could not resolve " << addr_str << std::endl;
+		return 2;
+	}
+
+	if (! client::sock.connect(addr)) {
+		return 3;
+	}
 
 	timer fps;
 
+	SDL_Event event;
 	bool quit = false;
 	while(!quit) {
 		fps.start();
@@ -136,6 +137,8 @@ int main (int argc, char** argv) {
 			SDL_Delay(1000 / client::FPS - fps.get_ticks());
 		}
 	}
+
+	client::sock.disconnect();
 
 	client::cleanUp();
 	return 0;

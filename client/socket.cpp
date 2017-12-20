@@ -62,22 +62,38 @@ bool client_socket::connect(IPaddress addr) {
 	sendCommand("connect");
 
 	SDLNet_UDP_AddSocket(sock_set, sock);
+
+	client_thread = std::thread([&]() {
+		while (sock) {
+			sendCommand("ping");
+
+			int numready = SDLNet_CheckSockets(sock_set, CHECK_TIMEOUT);
+
+			if (numready > 0) {
+				memset(pack_data, 0, PACKET_SIZE);
+				if (SDLNet_UDP_Recv(sock, &receiver)) {
+					received();
+				} else {
+					// Server disconnected
+					break;
+				}
+			}
+		}
+	});
 	return true;
 }
 
-void client_socket::close() {
+void client_socket::disconnect() {
 	if (sock) {
-		disconnect();
+		sendCommand("disconnect");
+
 		SDLNet_UDP_DelSocket(sock_set, sock);
 		SDLNet_UDP_Close(sock);
 		sock = NULL;
 	}
-}
-
-void client_socket::disconnect() {
-	sendCommand("disconnect");
-
-	memset(&server_addr, 0, sizeof(server_addr));
+	if (client_thread.joinable()) {
+		client_thread.join();
+	}
 }
 
 bool client_socket::sendCommand(const std::string &cmd) {
@@ -109,23 +125,6 @@ bool client_socket::send(packet_data data) {
 }
 
 void client_socket::run() {
-	client_thread = std::thread([&]() {
-		while (sock) {
-			sendCommand("ping");
-
-			int numready = SDLNet_CheckSockets(sock_set, CHECK_TIMEOUT);
-
-			if (numready > 0) {
-				memset(pack_data, 0, PACKET_SIZE);
-				if (SDLNet_UDP_Recv(sock, &receiver)) {
-					received();
-				} else {
-					// Server disconnected
-					break;
-				}
-			}
-		}
-	});
 }
 
 }

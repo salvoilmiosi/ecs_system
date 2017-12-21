@@ -14,11 +14,8 @@ class packet_data_in {
 public:
 	packet_data_in(const packet_data &data) : data(data) {}
 
-	packet_data_in(const UDPpacket &packet) : data(packet.data, packet.data + packet.len) {}
-
 	const uint8_t *read(size_t len) {
 		const uint8_t *data_ptr = data.data() + index;
-		//packet_data pack(data.begin() + index, data.begin() + index + len);
 		index += len;
 		return data_ptr;
 	}
@@ -32,7 +29,7 @@ public:
 	}
 
 private:
-	const packet_data data;
+	const packet_data &data;
 
 	size_t index = 0;
 

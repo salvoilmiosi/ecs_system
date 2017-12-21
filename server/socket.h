@@ -29,11 +29,11 @@ static const uint8_t INPUT_HANDLE = 0xc5;
 
 class server_socket {
 public:
-	server_socket() {
+	server_socket() : recv_data(PACKET_SIZE) {
 		sock_set = SDLNet_AllocSocketSet(1);
 
 		receiver.channel = -1;
-		receiver.data = pack_data;
+		receiver.data = recv_data.data();
 		receiver.maxlen = PACKET_SIZE;
 	}
 
@@ -55,7 +55,7 @@ private:
 	std::thread serv_thread;
 
 	UDPpacket receiver;
-	Uint8 pack_data[PACKET_SIZE];
+	packet_data recv_data;
 	Uint32 maxPid;
 
 	struct client_info {
@@ -71,20 +71,22 @@ private:
 	void received() {
 		std::lock_guard lock(c_mutex);
 
-		switch (pack_data[0]) {
+		packet_data_in reader(recv_data);
+
+		switch (readByte(reader)) {
 		case COMMAND_HANDLE:
-			parseCommand();
+			parseCommand(reader);
 			break;
 		case INPUT_HANDLE:
-			parseInput();
+			parseInput(reader);
 			break;
 		}
 	}
 
 	auto findClient();
 
-	void parseCommand();
-	void parseInput();
+	void parseCommand(packet_data_in &reader);
+	void parseInput(packet_data_in &reader);
 
 	void addClient();
 	void stateClient();

@@ -44,7 +44,6 @@ bool server_socket::open(uint16_t port) {
 			int numready = SDLNet_CheckSockets(sock_set, CHECK_TIMEOUT);
 
 			if (numready > 0) {
-				memset(pack_data, 0, PACKET_SIZE);
 				if (SDLNet_UDP_Recv(sock, &receiver)) {
 					received();
 				}
@@ -119,8 +118,8 @@ auto server_socket::findClient() {
 	});
 }
 
-void server_socket::parseCommand() {
-	std::string cmd((char *)pack_data + 1);
+void server_socket::parseCommand(packet_data_in &in) {
+	std::string cmd = readString(in);
 	if (cmd == "connect") {
 		addClient();
 	} else if (cmd == "state") {
@@ -132,12 +131,8 @@ void server_socket::parseCommand() {
 	}
 }
 
-void server_socket::parseInput() {
+void server_socket::parseInput(packet_data_in &in) {
 	if (auto it = findClient(); it != clients_connected.end()) {
-		packet_data_in in(receiver);
-
-		if (readByte(in) != INPUT_HANDLE) return;
-
 		input_command cmd;
 		cmd.cmd = static_cast<command_type>(readByte(in));
 
@@ -147,7 +142,6 @@ void server_socket::parseInput() {
 
 		it->input.handleCommand(cmd);
 	}
-
 }
 
 void server_socket::addClient() {

@@ -128,7 +128,8 @@ public:
 		return currentSize;
 	}
 
-	void forEachEntity(auto func) {
+	template<typename Func>
+	void forEachEntity(const Func &func) {
 		for (size_t i=0; i<currentSize; ++i) {
 			func(entity_id_list[i]);
 		}

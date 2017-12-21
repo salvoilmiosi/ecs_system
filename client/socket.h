@@ -23,46 +23,13 @@ static const int CLIENT_TIMEOUT = 5000;
 static const uint8_t COMMAND_HANDLE = 0xec;
 static const uint8_t INPUT_HANDLE = 0xc5;
 
-class packet_joiner {
-public:
-	void add(UDPpacket pack);
-	
-	template<typename Func>
-	void forEachJoined(Func func) {
-		while (!joined.empty()) {
-			func(joined.front());
-			joined.pop_front();
-		}
-	}
-
-private:
-	struct packet {
-		Uint32 pid;
-		Uint8 count;
-		Uint8 slices;
-		Uint32 time_added;
-		packet_data data;
-		size_t len;
-	};
-
-	std::list<packet> packets;
-
-	typedef std::list<packet>::iterator packet_it;
-
-	std::deque<packet_data> joined;
-
-	void findJoin(Uint32 time);
-
-	void join(std::vector<packet_it> &sameId);
-};
-
 class client_socket {
 public:
-	client_socket() {
+	client_socket() : recv_data(PACKET_SIZE) {
 		sock_set = SDLNet_AllocSocketSet(1);
 
 		receiver.channel = -1;
-		receiver.data = pack_data;
+		receiver.data = recv_data.data();
 		receiver.maxlen = PACKET_SIZE;
 	}
 
@@ -81,9 +48,12 @@ public:
 	bool send(packet_data data);
 	
 	template<typename Func>
-	void forEachPacket(Func func) {
+	void forEachPacket(const Func &func) {
 		std::lock_guard lock(j_mutex);
-		joiner.forEachJoined(func);
+		while (!joined.empty()) {
+			func(joined.front());
+			joined.pop_front();
+		}
 	}
 
 private:
@@ -95,16 +65,29 @@ private:
 	std::thread client_thread;
 	
 	UDPpacket receiver;
-	Uint8 pack_data[PACKET_SIZE];
-
-	packet_joiner joiner;
+	packet_data recv_data;
 
 	std::mutex j_mutex;
 
-	void received() {
-		std::lock_guard lock(j_mutex);
-		joiner.add(receiver);
-	}
+	struct recv_packet {
+		Uint32 pid;
+		Uint8 count;
+		Uint8 slices;
+		Uint32 time_added;
+		packet_data data;
+	};
+
+	std::list<recv_packet> joining;
+
+	typedef std::list<recv_packet>::iterator packet_it;
+
+	std::deque<packet_data> joined;
+
+	void received();
+
+	void findJoin(Uint32 time);
+
+	void join(std::vector<packet_it> &sameId);
 };
 
 }

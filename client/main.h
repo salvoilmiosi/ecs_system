@@ -19,6 +19,16 @@ extern ecs::world_in<MyComponents, MAX_ENTITIES> wld;
 extern SDL_Window *window;
 extern SDL_Renderer *renderer;
 
+enum packet_type {
+	PACKET_NONE,
+
+	PACKET_EDITLOG,
+	PACKET_SERVERMSG,
+
+	PACKET_USER_COMMAND,
+	PACKET_USER_INPUT
+};
+
 }
 
 #endif // __MAIN_H__

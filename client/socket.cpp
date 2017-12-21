@@ -1,9 +1,14 @@
 #include "socket.h"
+#include "main.h"
 
 #include <algorithm>
 #include <iostream>
 
 namespace socket {
+
+static inline bool operator == (const IPaddress &a, const IPaddress &b) {
+	return a.host == b.host && a.port == b.port;
+}
 
 bool client_socket::connect(IPaddress addr) {
 	server_addr = addr;
@@ -28,9 +33,12 @@ bool client_socket::connect(IPaddress addr) {
 
 			if (numready > 0) {
 				if (SDLNet_UDP_Recv(sock, &receiver)) {
-					received();
-				} else {
-					// Server disconnected
+					if (receiver.address == server_addr) {
+						received();
+					}
+				} else if (is_open()) {
+					std::cout << "Server timed out" << std::endl;
+					close();
 					break;
 				}
 			}
@@ -39,13 +47,17 @@ bool client_socket::connect(IPaddress addr) {
 	return true;
 }
 
+void client_socket::close() {
+	SDLNet_UDP_DelSocket(sock_set, sock);
+	SDLNet_UDP_Close(sock);
+	sock = NULL;
+}
+
 void client_socket::disconnect() {
-	if (sock) {
+	if (is_open()) {
 		sendCommand("disconnect");
 
-		SDLNet_UDP_DelSocket(sock_set, sock);
-		SDLNet_UDP_Close(sock);
-		sock = NULL;
+		close();
 	}
 	if (client_thread.joinable()) {
 		client_thread.join();
@@ -54,7 +66,7 @@ void client_socket::disconnect() {
 
 bool client_socket::sendCommand(const std::string &cmd) {
 	packet_data_out out;
-	writeByte(out, COMMAND_HANDLE);
+	writeByte(out, client::PACKET_USER_COMMAND);
 	writeString(out, cmd);
 	return send(out.data());
 }
@@ -63,7 +75,7 @@ bool client_socket::sendInputCommand(const userinput::command &cmd) {
 	if (cmd.cmd == userinput::CMD_NONE) return false;
 
 	packet_data_out out;
-	writeByte(out, INPUT_HANDLE);
+	writeByte(out, client::PACKET_USER_INPUT);
 	writeByte(out, cmd.cmd);
 	writeBinary<position>(out, cmd.pos);
 	return send(out.data());

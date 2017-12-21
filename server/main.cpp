@@ -33,6 +33,7 @@ static void tick() {
 	wld.updateEntities();
 
 	packet_data_out packet;
+	writeByte(packet, PACKET_EDITLOG);
 	wld.flushLog(packet);
 
 	sock.sendAll(packet.data());
@@ -44,6 +45,7 @@ static bool quit = false;
 
 void command(std::string cmd) {
 	if (cmd == "quit") {
+		sock.sendServerMsg("quit");
 		quit = true;
 	}
 }

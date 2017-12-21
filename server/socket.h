@@ -27,6 +27,16 @@ static const int CLIENT_TIMEOUT = 5000;
 static const uint8_t COMMAND_HANDLE = 0xec;
 static const uint8_t INPUT_HANDLE = 0xc5;
 
+enum packet_type {
+	PACKET_NONE,
+
+	PACKET_EDITLOG,
+	PACKET_SERVERMSG,
+
+	PACKET_USER_COMMAND,
+	PACKET_USER_INPUT
+};
+
 class server_socket {
 public:
 	server_socket() : recv_data(PACKET_SIZE) {
@@ -44,6 +54,8 @@ public:
 	bool open(uint16_t port = PORT);
 
 	void close();
+
+	void sendServerMsg(const std::string &msg);
 
 	void sendTo(const packet_data &packet, IPaddress addr);
 	void sendAll(const packet_data &packet);
@@ -68,20 +80,7 @@ private:
 
 	std::mutex c_mutex;
 
-	void received() {
-		std::lock_guard lock(c_mutex);
-
-		packet_data_in reader(recv_data);
-
-		switch (readByte(reader)) {
-		case COMMAND_HANDLE:
-			parseCommand(reader);
-			break;
-		case INPUT_HANDLE:
-			parseInput(reader);
-			break;
-		}
-	}
+	void received();
 
 	auto findClient();
 

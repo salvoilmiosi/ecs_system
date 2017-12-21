@@ -61,11 +61,30 @@ static inline void executeAll(auto &systems) {
 	});
 }
 
+static void readServerMessage(packet_data_in &in) {
+	std::string msg = readString(in);
+	if (msg == "quit") {
+		sock.close();
+		std::cout << "Server has quit" << std::endl;
+	}
+}
+
 static void readPackets() {
 	sock.forEachPacket([](auto &x) {
 		packet_data_in pdi(x);
+		packet_type type = static_cast<packet_type>(readByte(pdi));
 		try {
-			wld.readLog(pdi);
+			switch (type) {
+			case PACKET_EDITLOG:
+				wld.readLog(pdi);
+				break;
+			case PACKET_SERVERMSG:
+				readServerMessage(pdi);
+				break;
+			case PACKET_NONE:
+			default:
+				break;
+			}
 		} catch (std::invalid_argument &err) {
 			std::cerr << "Broken packet: " << err.what() << std::endl;
 		}
@@ -108,8 +127,7 @@ int main (int argc, char** argv) {
 	timer fps;
 
 	SDL_Event event;
-	bool quit = false;
-	while(!quit) {
+	while(client::sock.is_open()) {
 		fps.start();
 
 		SDL_SetRenderDrawColor(client::renderer, 0x0, 0x0, 0x0, 0xff);
@@ -121,7 +139,7 @@ int main (int argc, char** argv) {
 		while (SDL_PollEvent(&event)) {
 			switch (event.type) {
 			case SDL_QUIT:
-				quit = true;
+				client::sock.disconnect();
 				break;
 			case SDL_MOUSEBUTTONDOWN:
 			case SDL_MOUSEMOTION:
@@ -142,8 +160,6 @@ int main (int argc, char** argv) {
 			SDL_Delay(1000 / client::FPS - fps.get_ticks());
 		}
 	}
-
-	client::sock.disconnect();
 
 	client::cleanUp();
 	return 0;

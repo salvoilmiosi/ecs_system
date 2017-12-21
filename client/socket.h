@@ -20,9 +20,6 @@ static const int PACKET_SIZE = 1024;
 static const int CHECK_TIMEOUT = 1000;
 static const int CLIENT_TIMEOUT = 5000;
 
-static const uint8_t COMMAND_HANDLE = 0xec;
-static const uint8_t INPUT_HANDLE = 0xc5;
-
 class client_socket {
 public:
 	client_socket() : recv_data(PACKET_SIZE) {
@@ -39,7 +36,12 @@ public:
 
 	bool connect(IPaddress addr);
 
+	void close();
 	void disconnect();
+
+	bool is_open() {
+		return sock != NULL;
+	}
 
 	bool sendCommand(const std::string &cmd);
 

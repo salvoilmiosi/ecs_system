@@ -64,6 +64,13 @@ void server_socket::close() {
 	}
 }
 
+void server_socket::sendServerMsg(const std::string &msg) {
+	packet_data_out out;
+	writeByte(out, PACKET_SERVERMSG);
+	writeString(out, msg);
+	sendAll(out.data());
+}
+
 void server_socket::sendTo(const packet_data &data, IPaddress addr) {
 	// Divide the packet in PACKET_SIZE sized slices.
 	// Add a header to all packets so they can be reconstructed in order when received
@@ -109,6 +116,26 @@ void server_socket::sendAll(const packet_data &data) {
 	std::lock_guard lock(c_mutex);
 	for (auto &c : clients_connected) {
 		sendTo(data, c.address);
+	}
+}
+
+void server_socket::received() {
+	std::lock_guard lock(c_mutex);
+
+	packet_data_in reader(recv_data);
+
+	packet_type type = static_cast<packet_type>(readByte(reader));
+
+	switch (type) {
+	case PACKET_USER_COMMAND:
+		parseCommand(reader);
+		break;
+	case PACKET_USER_INPUT:
+		parseInput(reader);
+		break;
+	case PACKET_NONE:
+	default:
+		break;
 	}
 }
 
@@ -163,6 +190,7 @@ void server_socket::addClient() {
 void server_socket::stateClient() {
 	packet_data_out packet;
 
+	writeByte(packet, PACKET_EDITLOG);
 	server::wld.logState().write(packet);
 	
 	sendTo(packet.data(), receiver.address);

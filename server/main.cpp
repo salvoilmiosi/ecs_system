@@ -39,8 +39,6 @@ static void tick() {
 	sock.sendAll(packet.data());
 }
 
-static std::thread cmdline;
-
 static bool quit = false;
 
 void command(std::string cmd) {
@@ -52,6 +50,21 @@ void command(std::string cmd) {
 
 }
 
+struct thread_wrapper {
+	std::thread thread;
+
+	template<typename Func, typename ... Args>
+	thread_wrapper(Func &&func, Args&& ... args) {
+		thread = std::thread(func, args ...);
+	}
+
+	~thread_wrapper() {
+		if (thread.joinable()) {
+			thread.join();
+		}
+	}
+};
+
 int main (int argc, char** argv) {
 	if (SDL_Init(SDL_INIT_TIMER) == -1)
 		return 1;
@@ -62,7 +75,7 @@ int main (int argc, char** argv) {
 	if (!server::sock.open())
 		return 3;
 
-	server::cmdline = std::thread([&]() {
+	thread_wrapper cmdline_thread([&]() {
 		std::string line;
 		while (!server::quit) {
 			std::getline(std::cin, line);
@@ -84,7 +97,6 @@ int main (int argc, char** argv) {
 	}
 
 	server::sock.close();
-	server::cmdline.join();
 
 	SDLNet_Quit();
 	SDL_Quit();

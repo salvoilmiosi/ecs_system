@@ -1,21 +1,23 @@
 #ifndef __COMPONENTS_H__
 #define __COMPONENTS_H__
 
+#include <string>
+
 #include "ecs.h"
 
 struct printable {
-	const char *name;
+	std::string name;
 
 	printable() {}
-	printable(const char *name) : name(name) {}
+	printable(std::string name) : name(name) {}
 };
 
 struct sprite {
-	const char *src = nullptr;
+	std::string src;
 	int color = 0;
 
 	sprite() {}
-	sprite(const char *src) : src(src) {}
+	sprite(std::string src) : src(src) {}
 	sprite(int color) : color(color) {}
 };
 

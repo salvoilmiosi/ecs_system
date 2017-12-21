@@ -31,8 +31,6 @@ public:
 	server_socket() {
 		sock_set = SDLNet_AllocSocketSet(1);
 
-		memset(&receiver, 0, sizeof(receiver));
-
 		receiver.channel = -1;
 		receiver.data = pack_data;
 		receiver.maxlen = PACKET_SIZE;

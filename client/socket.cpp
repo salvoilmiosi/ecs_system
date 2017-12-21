@@ -6,16 +6,21 @@
 namespace socket {
 
 void packet_joiner::add(UDPpacket pack) {
-	packet p;
-	p.len = pack.len - sizeof(p.header);
-	p.time_added = SDL_GetTicks();
+	packet_data_in in(pack);
 
-	std::copy(pack.data, pack.data + sizeof(p.header), reinterpret_cast<uint8_t *>(&p.header));
-	p.data.assign(pack.data + sizeof(p.header), pack.data + pack.len);
+	static const size_t HEAD_SIZE = 6;
+
+	packet p;
+	p.pid = readBinary<uint32_t>(in);
+	p.count = readBinary<uint8_t>(in);
+	p.slices = readBinary<uint8_t>(in);
+	p.time_added = SDL_GetTicks();
+	p.data.assign(pack.data + HEAD_SIZE, pack.data + pack.len);
+	p.len = pack.len - HEAD_SIZE;
 
 	packets.push_front(p);
 
-	findJoin(p.header.pid);
+	findJoin(p.pid);
 
 	if (!packets.empty() && SDL_GetTicks() - packets.back().time_added > CLIENT_TIMEOUT) {
 		packets.pop_back();
@@ -25,9 +30,9 @@ void packet_joiner::add(UDPpacket pack) {
 void packet_joiner::findJoin(Uint32 pid) {
 	std::vector<packet_it> sameId;
 	for (auto it = packets.begin(); it != packets.end(); ++it) {
-		if (it->header.pid == pid) {
+		if (it->pid == pid) {
 			sameId.push_back(it);
-			if (sameId.size() >= it->header.slices) {
+			if (sameId.size() >= it->slices) {
 				join(sameId);
 				break;
 			}
@@ -37,7 +42,7 @@ void packet_joiner::findJoin(Uint32 pid) {
 
 void packet_joiner::join(std::vector<packet_it> &sameId) {
 	std::sort(sameId.begin(), sameId.end(), [](auto &a, auto &b) {
-		return a->header.count < b->header.count;
+		return a->count < b->count;
 	});
 
 	packet_data data;
@@ -103,13 +108,13 @@ bool client_socket::sendCommand(const std::string &cmd) {
 	return send(data);
 }
 
-bool client_socket::sendEvent(const SDL_Event &e) {
+bool client_socket::sendInputCommand(const userinput::command &cmd) {
+	if (cmd.cmd == userinput::CMD_NONE) return false;
+
 	packet_data_out data;
-	struct {
-		uint8_t handler;
-		SDL_Event event;
-	} s_input = {INPUT_HANDLE, e};
-	data.write(&s_input, sizeof(s_input));
+	writeBinary<uint8_t>(data, INPUT_HANDLE);
+	writeBinary<uint8_t>(data, cmd.cmd);
+	writeBinary<position>(data, cmd.pos);
 	return send(data.data());
 }
 
@@ -118,13 +123,10 @@ bool client_socket::send(packet_data data) {
 
 	packet.channel = 0;
 	packet.data = data.data();
-	packet.maxlen = PACKET_SIZE;
 	packet.len = data.size();
+	packet.maxlen = PACKET_SIZE;
 
 	return SDLNet_UDP_Send(sock, packet.channel, &packet);
-}
-
-void client_socket::run() {
 }
 
 }

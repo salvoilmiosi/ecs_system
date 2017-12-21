@@ -11,6 +11,7 @@
 #include <string>
 
 #include "packet_data.h"
+#include "userinput.h"
 
 namespace socket {
 
@@ -36,11 +37,9 @@ public:
 
 private:
 	struct packet {
-		struct {
-			Uint32 pid;
-			Uint8 count;
-			Uint8 slices;
-		} header;
+		Uint32 pid;
+		Uint8 count;
+		Uint8 slices;
 		Uint32 time_added;
 		packet_data data;
 		size_t len;
@@ -77,11 +76,9 @@ public:
 
 	bool sendCommand(const std::string &cmd);
 
-	bool sendEvent(const SDL_Event &e);
+	bool sendInputCommand(const userinput::command &e);
 
 	bool send(packet_data data);
-
-	void run();
 	
 	template<typename Func>
 	void forEachPacket(Func func) {

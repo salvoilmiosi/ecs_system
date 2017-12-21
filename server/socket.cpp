@@ -2,9 +2,11 @@
 
 #include <iostream>
 #include <algorithm>
+#include <fstream>
 
 #include "main.h"
 #include "userinput.h"
+#include "components_serial.h"
 
 namespace socket {
 
@@ -65,45 +67,43 @@ void server_socket::close() {
 }
 
 void server_socket::sendTo(const packet_data &data, IPaddress addr) {
-	Uint8 data_copy[PACKET_SIZE];
-
 	// Divide the packet in PACKET_SIZE sized slices.
 	// Add a header to all packets so they can be reconstructed in order when received
-	struct {
-		Uint32 pid;
-		Uint8 count;
-		Uint8 slices;
-	} header;
 
-	const uint8_t *data_ptr = data.data();
-	int len = data.size();
+	size_t HEAD_SIZE = 6;
 
-	header.pid = maxPid++;
-	header.count = 0;
-	header.slices = len / (PACKET_SIZE - sizeof(header)) + 1;
+	uint32_t pid = maxPid++;
+	uint8_t count = 0;
+	uint8_t slices = data.size() / (PACKET_SIZE - HEAD_SIZE) + 1;
 
-	while (len > 0) {
+	size_t data_ptr = 0;
+
+	for (int len = data.size(); len > 0;) {
+		size_t packet_len = PACKET_SIZE > (len + HEAD_SIZE) ? (len + HEAD_SIZE) : PACKET_SIZE;
+		
+		packet_data_out header;
+		writeBinary<uint32_t>(header, pid);
+		writeBinary<uint8_t>(header, count);
+		writeBinary<uint8_t>(header, slices);
+		packet_data writer(header.data());
+		writer.insert(writer.end(), data.begin() + data_ptr, data.begin() + data_ptr + packet_len - HEAD_SIZE);
+
 		UDPpacket packet;
-		memset(&packet, 0, sizeof(packet));
 
 		packet.channel = -1;
-		packet.data = data_copy;
+		packet.data = writer.data();
+		packet.len = writer.size();
 		packet.maxlen = PACKET_SIZE;
-		packet.len = PACKET_SIZE > (len + sizeof(header)) ? (len + sizeof(header)) : PACKET_SIZE;
-
-		memset(data_copy, 0, PACKET_SIZE);
-		memcpy(data_copy, &header, sizeof(header));
-		memcpy(data_copy + sizeof(header), data_ptr, packet.len - sizeof(header));
-
 		packet.address = addr;
+		
 		if (!SDLNet_UDP_Send(sock, packet.channel, &packet)) {
 			std::cout << "Lost packet" << std::endl;
 		}
 
-		data_ptr += PACKET_SIZE - sizeof(header);
-		len -= PACKET_SIZE - sizeof(header);
+		data_ptr += PACKET_SIZE - HEAD_SIZE;
+		len -= PACKET_SIZE - HEAD_SIZE;
 
-		++header.count;
+		++count;
 	}
 }
 
@@ -134,23 +134,21 @@ void server_socket::parseCommand() {
 }
 
 void server_socket::parseInput() {
-	struct {
-		uint8_t handler;
-		SDL_Event event;
-	} s_input;
-	memcpy(&s_input, pack_data, sizeof(s_input));
-
 	if (auto it = findClient(); it != clients_connected.end()) {
-		switch (s_input.event.type) {
-		case SDL_MOUSEBUTTONDOWN:
-		case SDL_MOUSEBUTTONUP:
-			it->input.handleMouseButton(s_input.event.button);
-			break;
-		case SDL_MOUSEMOTION:
-			it->input.handleMouseMotion(s_input.event.motion);
-			break;
-		}
+		packet_data_in in(receiver);
+
+		if (readBinary<uint8_t>(in) != INPUT_HANDLE) return;
+
+		input_command cmd;
+		cmd.cmd = static_cast<command_type>(readBinary<uint8_t>(in));
+
+		if (cmd.cmd == CMD_NONE) return;
+
+		cmd.pos = readBinary<position>(in);
+
+		it->input.handleCommand(cmd);
 	}
+
 }
 
 void server_socket::addClient() {

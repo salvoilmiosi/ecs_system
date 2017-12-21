@@ -61,23 +61,6 @@ public:
 
 private:
 	std::deque<entity_edit> edits;
-
-	template<typename T>
-	void writeBinary(const T& obj, packet_data_out &out) {
-		out.write(&obj, sizeof(T));
-	}
-
-	template<typename T>
-	void readBinary(T &obj, packet_data_in &in) {
-		in.read(&obj, sizeof(T));
-	}
-
-	template<typename T>
-	T readBinary(packet_data_in &in) {
-		T obj;
-		readBinary(obj, in);
-		return obj;
-	}
 };
 
 class syntax_error : public std::invalid_argument {
@@ -109,17 +92,18 @@ void edit_logger<ComponentList>::read(packet_data_in &in) {
 		if (edit.type == EDIT_NONE) continue;
 		CHECK_CHAR('I');
 		
-		readBinary<uint64_t>(edit.id, in);
+		edit.id = readBinary<uint64_t>(in);
 
 		CHECK_CHAR('M');
 		edit.mask = readBinary<uint64_t>(in);
 
 		if (edit.type != EDIT_MASK) {
 			mpl::for_each_in_tuple(edit.data, [&](auto &comp) {
-				auto c_mask = world<ComponentList>::template generateMask<typename std::remove_reference<decltype(comp)>::type> ();
+				using component_type = typename std::remove_reference<decltype(comp)>::type;
+				auto c_mask = world<ComponentList>::template generateMask<component_type> ();
 				if ((edit.mask & c_mask) == c_mask) {
 					CHECK_CHAR('C');
-					readBinary(comp, in);
+					comp = readBinary<component_type>(in);
 				}
 			});
 		}
@@ -133,23 +117,24 @@ void edit_logger<ComponentList>::read(packet_data_in &in) {
 template<typename ComponentList>
 void edit_logger<ComponentList>::write(packet_data_out &out) {
 	forEachEdit([&](auto &edit){
-		writeBinary('T', out);
-		writeBinary<uint8_t>(edit.type, out);
+		writeBinary(out, 'T');
+		writeBinary<uint8_t>(out, edit.type);
 
 		if (edit.type == EDIT_NONE) return;
 
-		writeBinary('I', out);
-		writeBinary<uint64_t>(edit.id, out);
-		writeBinary('M', out);
-		writeBinary<uint64_t>(edit.mask.to_ullong(), out);
+		writeBinary(out, 'I');
+		writeBinary<uint64_t>(out, edit.id);
+		writeBinary(out, 'M');
+		writeBinary<uint64_t>(out, edit.mask.to_ullong());
 
 		if (edit.type == EDIT_MASK) return;
 
 		mpl::for_each_in_tuple(edit.data, [&](auto &comp) {
-			auto c_mask = world<ComponentList>::template generateMask<typename std::remove_reference<decltype(comp)>::type> ();
+			using component_type = typename std::remove_reference<decltype(comp)>::type;
+			auto c_mask = world<ComponentList>::template generateMask<component_type>();
 			if ((edit.mask & c_mask) == c_mask) {
-				writeBinary('C', out);
-				writeBinary(comp, out);
+				writeBinary(out, 'C');
+				writeBinary(out, comp);
 			}
 		});
 	});

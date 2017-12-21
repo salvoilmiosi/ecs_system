@@ -126,7 +126,7 @@ int main (int argc, char** argv) {
 			case SDL_MOUSEBUTTONDOWN:
 			case SDL_MOUSEMOTION:
 			case SDL_MOUSEBUTTONUP:
-				client::sock.sendEvent(event);
+				client::sock.sendInputCommand(userinput::handleEvent(event));
 				break;
 			default:
 				break;

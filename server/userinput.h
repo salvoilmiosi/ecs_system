@@ -3,7 +3,6 @@
 
 #include <SDL2/SDL.h>
 
-#include "ecs.h"
 #include "components.h"
 
 enum command_type {

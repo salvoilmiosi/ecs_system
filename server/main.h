@@ -1,9 +1,6 @@
 #ifndef __MAIN_H__
 #define __MAIN_H__
 
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_net.h>
-
 #include "ecs_net.h"
 #include "components.h"
 

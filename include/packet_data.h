@@ -63,65 +63,57 @@ private:
 // expect linker error if serializer function are undefined
 template<typename T> T readBinary(packet_data_in &in);
 
-template<> inline uint8_t readBinary(packet_data_in &in) {
+inline uint8_t readByte(packet_data_in &in) {
 	return *(in.read(sizeof(uint8_t)));
 }
 
-template<> inline char readBinary(packet_data_in &in) {
-	return readBinary<uint8_t>(in);
-}
-
-template<> inline std::string readBinary(packet_data_in &in) {
-	uint8_t len = readBinary<uint8_t>(in);
+inline std::string readString(packet_data_in &in) {
+	uint8_t len = readByte(in);
 	const uint8_t *begin = in.read(len);
 	return std::string(begin, begin + len);
 }
 
-template<> inline uint16_t readBinary(packet_data_in &in) {
+inline uint16_t readShort(packet_data_in &in) {
 	return SDLNet_Read16(in.read(sizeof(uint16_t)));
 }
 
-template<> inline uint32_t readBinary(packet_data_in &in) {
+inline uint32_t readLong(packet_data_in &in) {
 	return SDLNet_Read32(in.read(sizeof(uint32_t)));
 }
 
-template<> inline uint64_t readBinary(packet_data_in &in) {
-	uint64_t byte0 = readBinary<uint32_t>(in);
-	uint64_t byte1 = readBinary<uint32_t>(in);
+inline uint64_t readLongLong(packet_data_in &in) {
+	uint64_t byte0 = readLong(in);
+	uint64_t byte1 = readLong(in);
 	return byte0 << 32 | byte1;
 }
 
 // expect linker error if serializer function are undefined
 template<typename T> void writeBinary(packet_data_out &out, const T& obj);
 
-template<> inline void writeBinary(packet_data_out &out, const uint8_t &obj) {
+inline void writeByte(packet_data_out &out, const uint8_t &obj) {
 	out.write(&obj, sizeof(uint8_t));
 }
 
-template<> inline void writeBinary(packet_data_out &out, const char &obj) {
-	writeBinary<uint8_t>(out, obj);
-}
-
-template<> inline void writeBinary(packet_data_out &out, const std::string &obj) {
-	writeBinary<uint8_t>(out, obj.size());
+inline void writeString(packet_data_out &out, const std::string &obj) {
+	writeByte(out, obj.size());
 	out.write(reinterpret_cast<const uint8_t *>(obj.data()), obj.size());
 }
 
-template<> inline void writeBinary(packet_data_out &out, const uint16_t &obj) {
+inline void writeShort(packet_data_out &out, const uint16_t &obj) {
 	uint16_t pack;
 	SDLNet_Write16(obj, &pack);
 	out.write(reinterpret_cast<const uint8_t *>(&pack), sizeof(pack));
 }
 
-template<> inline void writeBinary(packet_data_out &out, const uint32_t &obj) {
+inline void writeLong(packet_data_out &out, const uint32_t &obj) {
 	uint32_t pack;
 	SDLNet_Write32(obj, &pack);
 	out.write(reinterpret_cast<const uint8_t *>(&pack), sizeof(pack));
 }
 
-template<> inline void writeBinary(packet_data_out &out, const uint64_t &obj) {
-	writeBinary<uint32_t>(out, (obj & 0xffffffff00000000) >> 32);
-	writeBinary<uint32_t>(out, obj & 0x00000000ffffffff);
+inline void writeLongLong(packet_data_out &out, const uint64_t &obj) {
+	writeLong(out, (obj & 0xffffffff00000000) >> 32);
+	writeLong(out, obj & 0x00000000ffffffff);
 }
 
 #define pack754_32(f) (pack754((f), 32, 8))
@@ -129,7 +121,7 @@ template<> inline void writeBinary(packet_data_out &out, const uint64_t &obj) {
 #define unpack754_32(i) (unpack754((i), 32, 8))
 #define unpack754_64(i) (unpack754((i), 64, 11))
 
-inline uint64_t pack754(long double f, unsigned bits, unsigned expbits)
+static uint64_t pack754(long double f, unsigned bits, unsigned expbits)
 {
     long double fnorm;
     int shift;
@@ -158,7 +150,7 @@ inline uint64_t pack754(long double f, unsigned bits, unsigned expbits)
     return (sign<<(bits-1)) | (exp<<(bits-expbits-1)) | significand;
 }
 
-inline long double unpack754(uint64_t i, unsigned bits, unsigned expbits)
+static long double unpack754(uint64_t i, unsigned bits, unsigned expbits)
 {
     long double result;
     long long shift;
@@ -184,24 +176,24 @@ inline long double unpack754(uint64_t i, unsigned bits, unsigned expbits)
     return result;
 }
 
-template<> inline float readBinary(packet_data_in &in) {
-	uint32_t i = readBinary<uint32_t>(in);
+inline float readFloat(packet_data_in &in) {
+	uint32_t i = readLong(in);
 	return unpack754_32(i);
 }
 
-template<> inline double readBinary(packet_data_in &in) {
-	uint64_t i = readBinary<uint64_t>(in);
+inline double readDouble(packet_data_in &in) {
+	uint64_t i = readLongLong(in);
 	return unpack754_64(i);
 }
 
-template<> inline void writeBinary(packet_data_out &out, const float &obj) {
+inline void writeFloat(packet_data_out &out, const float &obj) {
 	uint32_t i = pack754_32(obj);
-	writeBinary<uint32_t>(out, i);
+	writeLong(out, i);
 }
 
-template<> inline void writeBinary(packet_data_out &out, const double &obj) {
+inline void writeDouble(packet_data_out &out, const double &obj) {
 	uint64_t i = pack754_64(obj);
-	writeBinary<uint64_t>(out, i);
+	writeLongLong(out, i);
 }
 
 #endif // __PACKET_DATA_H__

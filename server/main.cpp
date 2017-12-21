@@ -1,6 +1,7 @@
 #include "main.h"
 
-#include <thread>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_net.h>
 
 #include "systems.h"
 #include "socket.h"

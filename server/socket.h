@@ -8,6 +8,7 @@
 #include <list>
 
 #include "packet_data.h"
+#include "components_serial.h"
 #include "userinput.h"
 
 namespace socket {

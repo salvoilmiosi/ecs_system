@@ -11,9 +11,9 @@ void packet_joiner::add(UDPpacket pack) {
 	static const size_t HEAD_SIZE = 6;
 
 	packet p;
-	p.pid = readBinary<uint32_t>(in);
-	p.count = readBinary<uint8_t>(in);
-	p.slices = readBinary<uint8_t>(in);
+	p.pid = readLong(in);
+	p.count = readByte(in);
+	p.slices = readByte(in);
 	p.time_added = SDL_GetTicks();
 	p.data.assign(pack.data + HEAD_SIZE, pack.data + pack.len);
 	p.len = pack.len - HEAD_SIZE;
@@ -112,8 +112,8 @@ bool client_socket::sendInputCommand(const userinput::command &cmd) {
 	if (cmd.cmd == userinput::CMD_NONE) return false;
 
 	packet_data_out data;
-	writeBinary<uint8_t>(data, INPUT_HANDLE);
-	writeBinary<uint8_t>(data, cmd.cmd);
+	writeByte(data, INPUT_HANDLE);
+	writeByte(data, cmd.cmd);
 	writeBinary<position>(data, cmd.pos);
 	return send(data.data());
 }

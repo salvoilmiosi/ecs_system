@@ -5,6 +5,7 @@
 #include <iostream>
 #include <bitset>
 #include <tuple>
+#include <sstream>
 
 #include "mpl.h"
 #include "packet_data.h"
@@ -70,32 +71,28 @@ public:
 
 private:
 	std::string msg(char expected, char got, size_t at) {
-		std::string str = "Syntax error: expected ";
-		str += expected;
-		str += " in position ";
-		str += std::to_string(at);
-		str += ", got ";
-		str += got;
-		return str;
+		std::ostringstream ss;
+		ss << "Expected " << expected << " in position " << at << ", got " << got;
+		return ss.str();
 	}
 };
 
-#define CHECK_CHAR(x) if (char got = readBinary<char>(in); got != x) throw syntax_error(x, got, in)
+#define CHECK_CHAR(x) if (char got = readByte(in); got != x) throw syntax_error(x, got, in)
 
 template<typename ComponentList>
 void edit_logger<ComponentList>::read(packet_data_in &in) {
 	while (! in.eof()) {
 		auto edit = create();
 		CHECK_CHAR('T');
-		edit.type = static_cast<edit_type>(readBinary<uint8_t>(in));
+		edit.type = static_cast<edit_type>(readByte(in));
 
 		if (edit.type == EDIT_NONE) continue;
 		CHECK_CHAR('I');
 		
-		edit.id = readBinary<uint64_t>(in);
+		edit.id = readLongLong(in);
 
 		CHECK_CHAR('M');
-		edit.mask = readBinary<uint64_t>(in);
+		edit.mask = readLongLong(in);
 
 		if (edit.type != EDIT_MASK) {
 			mpl::for_each_in_tuple(edit.data, [&](auto &comp) {
@@ -117,15 +114,15 @@ void edit_logger<ComponentList>::read(packet_data_in &in) {
 template<typename ComponentList>
 void edit_logger<ComponentList>::write(packet_data_out &out) {
 	forEachEdit([&](auto &edit){
-		writeBinary(out, 'T');
-		writeBinary<uint8_t>(out, edit.type);
+		writeByte(out, 'T');
+		writeByte(out, edit.type);
 
 		if (edit.type == EDIT_NONE) return;
 
-		writeBinary(out, 'I');
-		writeBinary<uint64_t>(out, edit.id);
-		writeBinary(out, 'M');
-		writeBinary<uint64_t>(out, edit.mask.to_ullong());
+		writeByte(out, 'I');
+		writeLongLong(out, edit.id);
+		writeByte(out, 'M');
+		writeLongLong(out, edit.mask.to_ullong());
 
 		if (edit.type == EDIT_MASK) return;
 
@@ -133,8 +130,8 @@ void edit_logger<ComponentList>::write(packet_data_out &out) {
 			using component_type = typename std::remove_reference<decltype(comp)>::type;
 			auto c_mask = world<ComponentList>::template generateMask<component_type>();
 			if ((edit.mask & c_mask) == c_mask) {
-				writeBinary(out, 'C');
-				writeBinary(out, comp);
+				writeByte(out, 'C');
+				writeBinary<component_type>(out, comp);
 			}
 		});
 	});

@@ -1,7 +1,5 @@
 #include "ecs.h"
 
-#include <iostream>
-
 #include "components.h"
 
 static const int MAX_ENTITIES = ecs::MAX_ENTITIES_DEFAULT;

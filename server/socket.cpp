@@ -2,7 +2,6 @@
 
 #include <iostream>
 #include <algorithm>
-#include <fstream>
 
 #include "main.h"
 #include "userinput.h"
@@ -82,9 +81,9 @@ void server_socket::sendTo(const packet_data &data, IPaddress addr) {
 		size_t packet_len = PACKET_SIZE > (len + HEAD_SIZE) ? (len + HEAD_SIZE) : PACKET_SIZE;
 		
 		packet_data_out header;
-		writeBinary<uint32_t>(header, pid);
-		writeBinary<uint8_t>(header, count);
-		writeBinary<uint8_t>(header, slices);
+		writeLong(header, pid);
+		writeByte(header, count);
+		writeByte(header, slices);
 		packet_data writer(header.data());
 		writer.insert(writer.end(), data.begin() + data_ptr, data.begin() + data_ptr + packet_len - HEAD_SIZE);
 
@@ -137,10 +136,10 @@ void server_socket::parseInput() {
 	if (auto it = findClient(); it != clients_connected.end()) {
 		packet_data_in in(receiver);
 
-		if (readBinary<uint8_t>(in) != INPUT_HANDLE) return;
+		if (readByte(in) != INPUT_HANDLE) return;
 
 		input_command cmd;
-		cmd.cmd = static_cast<command_type>(readBinary<uint8_t>(in));
+		cmd.cmd = static_cast<command_type>(readByte(in));
 
 		if (cmd.cmd == CMD_NONE) return;
 

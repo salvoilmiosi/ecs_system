@@ -128,6 +128,11 @@ int main (int argc, char** argv) {
 			case SDL_MOUSEBUTTONUP:
 				client::sock.sendInputCommand(userinput::handleEvent(event));
 				break;
+			case SDL_KEYDOWN:
+				if (event.key.keysym.sym == SDLK_SPACE) {
+					client::sock.sendCommand("state");
+				}
+				break;
 			default:
 				break;
 			}

@@ -7,7 +7,7 @@
 #include <mutex>
 #include <deque>
 #include <vector>
-#include <list>
+#include <map>
 #include <string>
 
 #include "packet_data.h"
@@ -70,24 +70,20 @@ private:
 	std::mutex j_mutex;
 
 	struct recv_packet {
-		Uint32 pid;
-		Uint8 count;
-		Uint8 slices;
-		Uint32 time_added;
+		uint32_t pid;
+		uint8_t count;
+		uint8_t slices;
+
 		packet_data data;
+
+		uint32_t time_added;
 	};
 
-	std::list<recv_packet> joining;
-
-	typedef std::list<recv_packet>::iterator packet_it;
+	std::map<uint32_t, std::vector<recv_packet>> joining;
 
 	std::deque<packet_data> joined;
 
 	void received();
-
-	void findJoin(Uint32 time);
-
-	void join(std::vector<packet_it> &sameId);
 };
 
 }

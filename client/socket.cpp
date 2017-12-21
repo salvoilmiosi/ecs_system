@@ -81,8 +81,6 @@ bool client_socket::send(packet_data data) {
 }
 
 void client_socket::received() {
-	std::lock_guard lock(j_mutex);
-
 	packet_data_in in(recv_data);
 
 	static const size_t HEAD_SIZE = 6;
@@ -91,42 +89,34 @@ void client_socket::received() {
 	p.pid = readLong(in);
 	p.count = readByte(in);
 	p.slices = readByte(in);
-	p.time_added = SDL_GetTicks();
+	
 	p.data.assign(recv_data.begin() + HEAD_SIZE, recv_data.begin() + receiver.len);
+	p.time_added = SDL_GetTicks();
 
-	joining.push_front(p);
+	// Inserts a new vector in the joining map
+	auto &packs = joining[p.pid];
+	packs.push_back(p);
 
-	findJoin(p.pid);
+	if (packs.size() >= p.slices) {
+		std::lock_guard lock(j_mutex);
 
-	if (!joining.empty() && SDL_GetTicks() - joining.back().time_added > CLIENT_TIMEOUT) {
-		joining.pop_back();
-	}
-}
+		std::sort(packs.begin(), packs.end(), [](auto &a, auto &b) {
+			return a.count < b.count;
+		});
 
-void client_socket::findJoin(Uint32 pid) {
-	std::vector<packet_it> sameId;
-	for (auto it = joining.begin(); it != joining.end(); ++it) {
-		if (it->pid == pid) {
-			sameId.push_back(it);
-			if (sameId.size() >= it->slices) {
-				join(sameId);
-				break;
-			}
+		packet_data joined_data;
+		for (auto &x : packs) {
+			joined_data.insert(joined_data.end(), x.data.begin(), x.data.end());
 		}
-	}
-}
+		joined.push_back(joined_data);
 
-void client_socket::join(std::vector<packet_it> &sameId) {
-	std::sort(sameId.begin(), sameId.end(), [](auto &a, auto &b) {
-		return a->count < b->count;
-	});
-
-	packet_data data;
-	for (auto &x : sameId) {
-		data.insert(data.end(), x->data.begin(), x->data.end());
-		joining.erase(x);
+		joining.erase(p.pid);
 	}
-	joined.push_back(data);
+
+	// Dirty way to check if the oldest element is timed out
+	if (!joining.empty() && SDL_GetTicks() - joining.begin()->second.back().time_added > CLIENT_TIMEOUT) {
+		joining.erase(joining.begin());
+	}
 }
 
 }

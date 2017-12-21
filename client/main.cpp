@@ -28,12 +28,6 @@ static auto on_draw_systems = std::make_tuple(
 );
 
 static bool initSDL() {
-	if (SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO) == -1)
-		return false;
-
-	if (SDLNet_Init() == -1)
-		return false;
-
 	window = SDL_CreateWindow("Sistema ECS - Client",
 		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
 		SCREEN_W, SCREEN_H, SDL_WINDOW_SHOWN);
@@ -108,9 +102,11 @@ static void render() {
 }
 
 int main (int argc, char** argv) {
-	if (! client::initSDL()) {
+	if (SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO) == -1)
 		return 1;
-	}
+
+	if (SDLNet_Init() == -1)
+		return 1;
 
 	const char *addr_str = (argc > 1) ? argv[1] : "localhost";
 
@@ -122,6 +118,10 @@ int main (int argc, char** argv) {
 
 	if (! client::sock.connect(addr)) {
 		return 3;
+	}
+	
+	if (! client::initSDL()) {
+		return 4;
 	}
 
 	timer fps;

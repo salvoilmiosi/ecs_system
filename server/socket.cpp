@@ -38,6 +38,14 @@ bool server_socket::open(uint16_t port) {
 	SDLNet_UDP_AddSocket(sock_set, sock);
 
 	serv_thread = std::thread([&]() {
+		UDPpacket receiver;
+
+		uint8_t recv_data[PACKET_SIZE];
+
+		receiver.channel = -1;
+		receiver.data = recv_data;
+		receiver.maxlen = PACKET_SIZE;
+
 		while (sock) {
 			testClients();
 
@@ -45,7 +53,7 @@ bool server_socket::open(uint16_t port) {
 
 			if (numready > 0) {
 				if (SDLNet_UDP_Recv(sock, &receiver)) {
-					received();
+					received(receiver);
 				}
 			}
 		}
@@ -133,46 +141,62 @@ void server_socket::sendAll(const packet_data &data) {
 	}
 }
 
-void server_socket::received() {
-	c_mutex.lock();
-
-	last_sender = std::find_if(clients_connected.begin(), clients_connected.end(), [&](auto &c) {
-		return c.address == receiver.address;
-	});
-
-	c_mutex.unlock();
-
+void server_socket::received(UDPpacket &packet) {
+	packet_data recv_data(packet.data, packet.data + packet.len);
 	packet_data_in reader(recv_data);
 
 	packet_type type = static_cast<packet_type>(readByte(reader));
 
-	switch (type) {
-	case PACKET_USER_COMMAND:
-		parseCommand(reader);
-		break;
-	case PACKET_USER_INPUT:
-		parseInput(reader);
-		break;
-	case PACKET_NONE:
-	default:
-		break;
+	c_mutex.lock();
+	auto sender = std::find_if(clients_connected.begin(), clients_connected.end(), [&](auto &c) {
+		return c.address == packet.address;
+	});
+	c_mutex.unlock();
+
+	if (type == PACKET_USER_CONNECT) {
+		if (sender != clients_connected.end()) return;
+
+		addClient(packet.address);
+	} else {
+		if (sender == clients_connected.end()) return;
+
+		switch(type) {
+		case PACKET_USER_COMMAND:
+			parseCommand(*sender, reader);
+			break;
+		case PACKET_USER_INPUT:
+			parseInput(*sender, reader);
+			break;
+		case PACKET_NONE:
+		default:
+			break;
+		}
 	}
 }
 
-void server_socket::parseCommand(packet_data_in &in) {
+void server_socket::addClient(IPaddress address) {
+	client_info sender;
+	sender.address = address;
+	sender.last_seen = SDL_GetTicks();
+
+	clients_connected.push_back(sender);
+	std::cout << ipString(address) << " connected" << std::endl;
+
+	stateClient(sender);
+}
+
+void server_socket::parseCommand(client_info &sender, packet_data_in &in) {
 	std::string cmd = readString(in);
-	if (cmd == "connect") {
-		addClient();
-	} else if (cmd == "state") {
-		stateClient();
+	if (cmd == "state") {
+		stateClient(sender);
 	} else if (cmd == "ping") {
-		pingClient();
+		pingClient(sender);
 	} else if (cmd == "disconnect") {
-		delClient();
+		delClient(sender);
 	}
 }
 
-void server_socket::parseInput(packet_data_in &in) {
+void server_socket::parseInput(client_info &sender, packet_data_in &in) {
 	input_command cmd;
 	cmd.cmd = static_cast<command_type>(readByte(in));
 
@@ -180,41 +204,28 @@ void server_socket::parseInput(packet_data_in &in) {
 
 	cmd.pos = readBinary<position>(in);
 
-	last_sender->input.handleCommand(cmd);
+	sender.input.handleCommand(cmd);
 }
 
-void server_socket::addClient() {
-	if (last_sender == clients_connected.end()) {
-		// If none are found create one
-		client_info c;
-		c.address = receiver.address;
-		c.last_seen = SDL_GetTicks();
 
-		clients_connected.push_back(c);
-		std::cout << ipString(receiver.address) << " connected" << std::endl;
-
-		stateClient();
-	}
-}
-
-void server_socket::stateClient() {
+void server_socket::stateClient(client_info &sender) {
 	packet_data_out packet;
 
 	writeByte(packet, PACKET_EDITLOG);
 	server::wld.logState().write(packet);
 	
-	send(packet.data(), receiver.address);
+	send(packet.data(), sender.address);
 }
 
-void server_socket::pingClient() {
-	last_sender->last_seen = SDL_GetTicks();
+void server_socket::pingClient(client_info &sender) {
+	sender.last_seen = SDL_GetTicks();
 }
 
-void server_socket::delClient() {
+void server_socket::delClient(client_info &sender) {
 	std::lock_guard lock(c_mutex);
 
 	clients_connected.erase(std::remove_if(clients_connected.begin(), clients_connected.end(), [&](auto &c) {
-		if (c.address == receiver.address) {
+		if (c.address == sender.address) {
 			std::cout << ipString(c.address) << " disconnected" << std::endl;
 			return true;
 		} else {

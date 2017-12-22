@@ -21,7 +21,9 @@ bool client_socket::connect(IPaddress addr) {
 		return false;
 	}
 
-	sendCommand("connect");
+	packet_data_out connect_packet;
+	writeByte(connect_packet, PACKET_USER_CONNECT);
+	send(connect_packet.data());
 
 	SDLNet_UDP_AddSocket(sock_set, sock);
 
@@ -37,8 +39,7 @@ bool client_socket::connect(IPaddress addr) {
 						received();
 					}
 				} else if (is_open()) {
-					std::cout << "Server timed out" << std::endl;
-					close();
+					close("Server timed out");
 					break;
 				}
 			}
@@ -47,17 +48,21 @@ bool client_socket::connect(IPaddress addr) {
 	return true;
 }
 
-void client_socket::close() {
+void client_socket::close(const char *msg) {
+	std::lock_guard lock(s_mutex);
+
 	SDLNet_UDP_DelSocket(sock_set, sock);
 	SDLNet_UDP_Close(sock);
 	sock = NULL;
+
+	std::cout << msg << std::endl;
 }
 
 void client_socket::disconnect() {
 	if (is_open()) {
 		sendCommand("disconnect");
 
-		close();
+		close("Disconnected");
 	}
 	if (client_thread.joinable()) {
 		client_thread.join();

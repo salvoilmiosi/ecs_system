@@ -27,6 +27,7 @@ enum packet_type {
 	PACKET_EDITLOG,
 	PACKET_SERVERMSG,
 
+	PACKET_USER_CONNECT,
 	PACKET_USER_COMMAND,
 	PACKET_USER_INPUT
 };
@@ -47,7 +48,7 @@ public:
 
 	bool connect(IPaddress addr);
 
-	void close();
+	void close(const char *msg);
 	void disconnect();
 
 	bool is_open() {
@@ -80,7 +81,7 @@ private:
 	UDPpacket receiver;
 	packet_data recv_data;
 
-	std::mutex j_mutex;
+	std::mutex j_mutex, s_mutex;
 
 	struct recv_packet {
 		uint32_t pid;

@@ -34,18 +34,15 @@ enum packet_type {
 	PACKET_EDITLOG,
 	PACKET_SERVERMSG,
 
+	PACKET_USER_CONNECT,
 	PACKET_USER_COMMAND,
 	PACKET_USER_INPUT
 };
 
 class server_socket {
 public:
-	server_socket() : recv_data(PACKET_SIZE) {
+	server_socket() {
 		sock_set = SDLNet_AllocSocketSet(1);
-
-		receiver.channel = -1;
-		receiver.data = recv_data.data();
-		receiver.maxlen = PACKET_SIZE;
 	}
 
 	~server_socket() {
@@ -70,9 +67,6 @@ private:
 
 	std::thread serv_thread;
 
-	UDPpacket receiver;
-
-	packet_data recv_data;
 	Uint32 maxPid;
 
 	struct client_info {
@@ -81,20 +75,18 @@ private:
 		userinput input;
 	};
 
-	std::vector<client_info>::iterator last_sender;
-
 	std::vector<client_info> clients_connected;
 	std::mutex c_mutex;
 
-	void received();
+	void received(UDPpacket &packet);
+	void addClient(IPaddress address);
 
-	void parseCommand(packet_data_in &reader);
-	void parseInput(packet_data_in &reader);
+	void parseCommand(client_info &sender, packet_data_in &reader);
+	void parseInput(client_info &sender, packet_data_in &reader);
 
-	void addClient();
-	void stateClient();
-	void pingClient();
-	void delClient();
+	void stateClient(client_info &sender);
+	void pingClient(client_info &sender);
+	void delClient(client_info &sender);
 
 	void testClients();
 };

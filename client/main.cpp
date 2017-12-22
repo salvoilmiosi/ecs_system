@@ -58,8 +58,7 @@ static inline void executeAll(auto &systems) {
 static void readServerMessage(packet_data_in &in) {
 	std::string msg = readString(in);
 	if (msg == "quit") {
-		sock.close();
-		std::cout << "Server has quit" << std::endl;
+		sock.close("Server has quit");
 	}
 }
 

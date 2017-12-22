@@ -175,6 +175,8 @@ void server_socket::received(UDPpacket &packet) {
 }
 
 void server_socket::addClient(IPaddress address) {
+	std::lock_guard lock(c_mutex);
+	
 	client_info sender;
 	sender.address = address;
 	sender.last_seen = SDL_GetTicks();

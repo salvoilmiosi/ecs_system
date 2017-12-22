@@ -38,7 +38,7 @@ bool client_socket::connect(IPaddress addr) {
 					if (receiver.address == server_addr) {
 						received();
 					}
-				} else if (is_open()) {
+				} else {
 					close("Server timed out");
 					break;
 				}
@@ -51,11 +51,13 @@ bool client_socket::connect(IPaddress addr) {
 void client_socket::close(const char *msg) {
 	std::lock_guard lock(s_mutex);
 
-	SDLNet_UDP_DelSocket(sock_set, sock);
-	SDLNet_UDP_Close(sock);
-	sock = NULL;
+	if (is_open()) {
+		SDLNet_UDP_DelSocket(sock_set, sock);
+		SDLNet_UDP_Close(sock);
+		sock = NULL;
 
-	std::cout << msg << std::endl;
+		std::cout << msg << std::endl;
+	}
 }
 
 void client_socket::disconnect() {

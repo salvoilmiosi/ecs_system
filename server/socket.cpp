@@ -114,13 +114,20 @@ void server_socket::sendTo(const packet_data &data, IPaddress addr) {
 
 void server_socket::sendAll(const packet_data &data) {
 	std::lock_guard lock(c_mutex);
+
 	for (auto &c : clients_connected) {
 		sendTo(data, c.address);
 	}
 }
 
 void server_socket::received() {
-	std::lock_guard lock(c_mutex);
+	c_mutex.lock();
+
+	last_sender = std::find_if(clients_connected.begin(), clients_connected.end(), [&](auto &c) {
+		return c.address == receiver.address;
+	});
+
+	c_mutex.unlock();
 
 	packet_data_in reader(recv_data);
 
@@ -139,12 +146,6 @@ void server_socket::received() {
 	}
 }
 
-auto server_socket::findClient() {
-	return std::find_if(clients_connected.begin(), clients_connected.end(), [this](auto &c) {
-		return c.address == receiver.address;
-	});
-}
-
 void server_socket::parseCommand(packet_data_in &in) {
 	std::string cmd = readString(in);
 	if (cmd == "connect") {
@@ -159,20 +160,18 @@ void server_socket::parseCommand(packet_data_in &in) {
 }
 
 void server_socket::parseInput(packet_data_in &in) {
-	if (auto it = findClient(); it != clients_connected.end()) {
-		input_command cmd;
-		cmd.cmd = static_cast<command_type>(readByte(in));
+	input_command cmd;
+	cmd.cmd = static_cast<command_type>(readByte(in));
 
-		if (cmd.cmd == CMD_NONE) return;
+	if (cmd.cmd == CMD_NONE) return;
 
-		cmd.pos = readBinary<position>(in);
+	cmd.pos = readBinary<position>(in);
 
-		it->input.handleCommand(cmd);
-	}
+	last_sender->input.handleCommand(cmd);
 }
 
 void server_socket::addClient() {
-	if (findClient() == clients_connected.end()) {
+	if (last_sender == clients_connected.end()) {
 		// If none are found create one
 		client_info c;
 		c.address = receiver.address;
@@ -182,8 +181,6 @@ void server_socket::addClient() {
 		std::cout << ipString(receiver.address) << " connected" << std::endl;
 
 		stateClient();
-
-		//SDLNet_UDP_Bind(sock, 0, &c.address);
 	}
 }
 
@@ -197,13 +194,13 @@ void server_socket::stateClient() {
 }
 
 void server_socket::pingClient() {
-	if (auto it = findClient(); it != clients_connected.end()) {
-		it->last_seen = SDL_GetTicks();
-	}
+	last_sender->last_seen = SDL_GetTicks();
 }
 
 void server_socket::delClient() {
-	clients_connected.erase(std::remove_if(clients_connected.begin(), clients_connected.end(), [this](auto &c) {
+	std::lock_guard lock(c_mutex);
+
+	clients_connected.erase(std::remove_if(clients_connected.begin(), clients_connected.end(), [&](auto &c) {
 		if (c.address == receiver.address) {
 			std::cout << ipString(c.address) << " disconnected" << std::endl;
 			return true;
@@ -214,6 +211,8 @@ void server_socket::delClient() {
 }
 
 void server_socket::testClients() {
+	std::lock_guard lock(c_mutex);
+
 	Uint32 now = SDL_GetTicks();
 
 	clients_connected.erase(std::remove_if(clients_connected.begin(), clients_connected.end(), [&](auto &c) {

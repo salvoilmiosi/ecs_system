@@ -5,7 +5,7 @@
 
 #include <thread>
 #include <mutex>
-#include <list>
+#include <vector>
 
 #include "packet_data.h"
 #include "components_serial.h"
@@ -67,6 +67,7 @@ private:
 	std::thread serv_thread;
 
 	UDPpacket receiver;
+
 	packet_data recv_data;
 	Uint32 maxPid;
 
@@ -76,13 +77,12 @@ private:
 		userinput input;
 	};
 
-	std::list<client_info> clients_connected;
+	std::vector<client_info>::iterator last_sender;
 
+	std::vector<client_info> clients_connected;
 	std::mutex c_mutex;
 
 	void received();
-
-	auto findClient();
 
 	void parseCommand(packet_data_in &reader);
 	void parseInput(packet_data_in &reader);

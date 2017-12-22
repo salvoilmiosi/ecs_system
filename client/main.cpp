@@ -66,16 +66,16 @@ static void readServerMessage(packet_data_in &in) {
 static void readPackets() {
 	sock.forEachPacket([](auto &x) {
 		packet_data_in pdi(x);
-		packet_type type = static_cast<packet_type>(readByte(pdi));
+		socket::packet_type type = static_cast<socket::packet_type>(readByte(pdi));
 		try {
 			switch (type) {
-			case PACKET_EDITLOG:
+			case socket::PACKET_EDITLOG:
 				wld.readLog(pdi);
 				break;
-			case PACKET_SERVERMSG:
+			case socket::PACKET_SERVERMSG:
 				readServerMessage(pdi);
 				break;
-			case PACKET_NONE:
+			case socket::PACKET_NONE:
 			default:
 				break;
 			}

@@ -29,6 +29,7 @@ static const uint8_t INPUT_HANDLE = 0xc5;
 
 enum packet_type {
 	PACKET_NONE,
+	PACKET_SLICED,
 
 	PACKET_EDITLOG,
 	PACKET_SERVERMSG,
@@ -57,10 +58,13 @@ public:
 
 	void sendServerMsg(const std::string &msg);
 
-	void sendTo(const packet_data &packet, IPaddress addr);
+	void send(const packet_data &packet, IPaddress addr);
 	void sendAll(const packet_data &packet);
 
 private:
+	void sendRaw(packet_data packet, IPaddress addr);
+	void sendSliced(const packet_data &packet, IPaddress addr);
+
 	UDPsocket sock = NULL;
 	SDLNet_SocketSet sock_set;
 

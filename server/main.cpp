@@ -33,7 +33,7 @@ static void tick() {
 	wld.updateEntities();
 
 	packet_data_out packet;
-	writeByte(packet, PACKET_EDITLOG);
+	writeByte(packet, socket::PACKET_EDITLOG);
 	wld.flushLog(packet);
 
 	sock.sendAll(packet.data());

@@ -71,44 +71,57 @@ void server_socket::sendServerMsg(const std::string &msg) {
 	sendAll(out.data());
 }
 
-void server_socket::sendTo(const packet_data &data, IPaddress addr) {
+void server_socket::sendRaw(packet_data data, IPaddress addr) {
+	UDPpacket packet;
+
+	packet.channel = -1;
+	packet.data = data.data();
+	packet.len = data.size();
+	packet.maxlen = PACKET_SIZE;
+	packet.address = addr;
+	
+	if (!SDLNet_UDP_Send(sock, packet.channel, &packet)) {
+		std::cout << "Lost packet" << std::endl;
+	}
+}
+
+void server_socket::sendSliced(const packet_data &data, IPaddress addr) {
 	// Divide the packet in PACKET_SIZE sized slices.
 	// Add a header to all packets so they can be reconstructed in order when received
 
-	size_t HEAD_SIZE = 6;
+	constexpr size_t HEAD_SIZE = 7;
 
 	uint32_t pid = maxPid++;
 	uint8_t count = 0;
 	uint8_t slices = data.size() / (PACKET_SIZE - HEAD_SIZE) + 1;
 
-	size_t data_ptr = 0;
+	size_t index = 0;
 
-	for (int len = data.size(); len > 0;) {
-		size_t packet_len = PACKET_SIZE > (len + HEAD_SIZE) ? (len + HEAD_SIZE) : PACKET_SIZE;
+	for (int remaining = data.size(); remaining > 0;) {
+		size_t packet_len = PACKET_SIZE > (remaining + HEAD_SIZE) ? (remaining + HEAD_SIZE) : PACKET_SIZE;
 		
 		packet_data_out header;
+		writeByte(header, PACKET_SLICED);
 		writeLong(header, pid);
 		writeByte(header, count);
 		writeByte(header, slices);
 		packet_data writer(header.data());
-		writer.insert(writer.end(), data.begin() + data_ptr, data.begin() + data_ptr + packet_len - HEAD_SIZE);
+		writer.insert(writer.end(), data.begin() + index, data.begin() + index + packet_len - HEAD_SIZE);
 
-		UDPpacket packet;
+		sendRaw(writer, addr);
 
-		packet.channel = -1;
-		packet.data = writer.data();
-		packet.len = writer.size();
-		packet.maxlen = PACKET_SIZE;
-		packet.address = addr;
-		
-		if (!SDLNet_UDP_Send(sock, packet.channel, &packet)) {
-			std::cout << "Lost packet" << std::endl;
-		}
-
-		data_ptr += PACKET_SIZE - HEAD_SIZE;
-		len -= PACKET_SIZE - HEAD_SIZE;
+		index += PACKET_SIZE - HEAD_SIZE;
+		remaining -= PACKET_SIZE - HEAD_SIZE;
 
 		++count;
+	}
+}
+
+void server_socket::send(const packet_data &data, IPaddress addr) {
+	if (data.size() > PACKET_SIZE) {
+		sendSliced(data, addr);
+	} else {
+		sendRaw(data, addr);
 	}
 }
 
@@ -116,7 +129,7 @@ void server_socket::sendAll(const packet_data &data) {
 	std::lock_guard lock(c_mutex);
 
 	for (auto &c : clients_connected) {
-		sendTo(data, c.address);
+		send(data, c.address);
 	}
 }
 
@@ -190,7 +203,7 @@ void server_socket::stateClient() {
 	writeByte(packet, PACKET_EDITLOG);
 	server::wld.logState().write(packet);
 	
-	sendTo(packet.data(), receiver.address);
+	send(packet.data(), receiver.address);
 }
 
 void server_socket::pingClient() {

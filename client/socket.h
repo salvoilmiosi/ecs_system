@@ -20,6 +20,17 @@ static const int PACKET_SIZE = 1024;
 static const int CHECK_TIMEOUT = 1000;
 static const int CLIENT_TIMEOUT = 5000;
 
+enum packet_type {
+	PACKET_NONE,
+	PACKET_SLICED,
+	
+	PACKET_EDITLOG,
+	PACKET_SERVERMSG,
+
+	PACKET_USER_COMMAND,
+	PACKET_USER_INPUT
+};
+
 class client_socket {
 public:
 	client_socket() : recv_data(PACKET_SIZE) {

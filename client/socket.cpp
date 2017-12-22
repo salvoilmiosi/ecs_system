@@ -66,7 +66,7 @@ void client_socket::disconnect() {
 
 bool client_socket::sendCommand(const std::string &cmd) {
 	packet_data_out out;
-	writeByte(out, client::PACKET_USER_COMMAND);
+	writeByte(out, PACKET_USER_COMMAND);
 	writeString(out, cmd);
 	return send(out.data());
 }
@@ -75,7 +75,7 @@ bool client_socket::sendInputCommand(const userinput::command &cmd) {
 	if (cmd.cmd == userinput::CMD_NONE) return false;
 
 	packet_data_out out;
-	writeByte(out, client::PACKET_USER_INPUT);
+	writeByte(out, PACKET_USER_INPUT);
 	writeByte(out, cmd.cmd);
 	writeBinary<position>(out, cmd.pos);
 	return send(out.data());
@@ -93,11 +93,21 @@ bool client_socket::send(packet_data data) {
 }
 
 void client_socket::received() {
+	packet_type type = static_cast<packet_type>(recv_data[0]);
+
+	if (type != PACKET_SLICED) {
+		std::lock_guard lock(j_mutex);
+
+		joined.emplace_back(recv_data.begin(), recv_data.begin() + receiver.len);
+		return;
+	}
+	
+	constexpr size_t HEAD_SIZE = 7;
+
 	packet_data_in in(recv_data);
 
-	static const size_t HEAD_SIZE = 6;
-
 	recv_packet p;
+	readByte(in); // should be PACKET_SLICED
 	p.pid = readLong(in);
 	p.count = readByte(in);
 	p.slices = readByte(in);

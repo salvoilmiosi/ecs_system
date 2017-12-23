@@ -15,7 +15,7 @@ BUILD ?=
 OBJ_DIR = obj/$(SRC)
 
 ifeq ($(OS),Windows_NT)
-	OUT := $(OUT).exe
+	override OUT := $(OUT).exe
 endif
 
 ifdef BUILD

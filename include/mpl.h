@@ -104,14 +104,13 @@ struct allHaveDefaultConstructor<TypeList<T, Ts...>>
 {
 };
 
-template<class F, class...Ts, std::size_t...Is>
-inline void for_each_in_tuple(std::tuple<Ts...> & tuple, F func, std::index_sequence<Is...>){
-	using expander = int[];
-	(void)expander { 0, ((void)func(std::get<Is>(tuple)), 0)... };
+template<typename F, typename ... Ts, size_t ... Is>
+inline void for_each_in_tuple(std::tuple<Ts...> &tuple, F func, std::index_sequence<Is...>) {
+	(func(std::get<Is>(tuple)), ...);
 }
 
-template<class F, class...Ts>
-inline void for_each_in_tuple(std::tuple<Ts...> & tuple, F func){
+template<typename F, typename ... Ts>
+inline void for_each_in_tuple(std::tuple<Ts...> &tuple, F func) {
 	for_each_in_tuple(tuple, func, std::make_index_sequence<sizeof...(Ts)>());
 }
 

@@ -5,10 +5,10 @@ export BUILD
 
 ifeq ($(OS),Windows_NT)
 	MAKE := mingw32-make
-	LIBS := -lmingw32 -lSDL2main -lSDL2 -lSDL2_net -lpthread
+	LIBS := -lmingw32 -lSDL2main -lSDL2 -lSDL2_net -pthread
 else
 	MAKE := make
-	LIBS := -lSDL2 -lSDL2_net -lpthread
+	LIBS := -lSDL2 -lSDL2_net -pthread
 endif
 
 ifeq ($(BUILD),release)

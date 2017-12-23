@@ -54,16 +54,6 @@ protected:
 	}
 
 private:
-	template<typename T>
-	constexpr static T or_all(const T &obj) {
-		return obj;
-	}
-
-	template<typename T, typename ... Ts>
-	constexpr static T or_all(const T &first, const Ts& ... then) {
-		return first | or_all(then ...);
-	}
-
 	void growContainers();
 
 	void addComponentsHelper(entity_id ent) {}
@@ -78,7 +68,7 @@ public:
 	template<typename ... Ts>
 	constexpr static component_mask generateMask() {
 		static_assert(areAllComponents<Ts ...>());
-		return or_all(component_mask(1) << mpl::IndexOf<Ts, ComponentList>::value ...);
+		return ((component_mask(1) << mpl::IndexOf<Ts, ComponentList>::value) | ...);
 	}
 
 	template<typename T>

@@ -68,7 +68,7 @@ public:
 	template<typename ... Ts>
 	constexpr static component_mask generateMask() {
 		static_assert(areAllComponents<Ts ...>());
-		return ((component_mask(1) << mpl::IndexOf<Ts, ComponentList>::value) | ...);
+		return ((component_mask(1) << mpl::IndexOf<Ts, ComponentList>::value) | ... | component_mask(0));
 	}
 
 	template<typename T>

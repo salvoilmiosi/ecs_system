@@ -14,17 +14,17 @@ ecs::world_in<MyComponents, MAX_ENTITIES> wld;
 
 socket::client_socket sock;
 
-static auto on_tick_systems = std::make_tuple(
-	ecs::system<position, generator>(particle_generator_func),
-	ecs::system<printable, position>(print_func),
-	ecs::system<position, velocity>(move_func),
-	ecs::system<velocity, acceleration>(accelerate_func),
-	ecs::system<scale, shrinking>(shrink_func),
-	ecs::system<health>(health_tick_func)
+static auto on_tick_systems = ecs::tuple_of_systems(
+	particle_generator_func,
+	print_func,
+	move_func,
+	accelerate_func,
+	shrink_func,
+	health_tick_func
 );
 
-static auto on_draw_systems = std::make_tuple(
-	ecs::system<sprite, position, scale>(draw_func)
+static auto on_draw_systems = ecs::tuple_of_systems(
+	draw_func
 );
 
 static bool initSDL() {

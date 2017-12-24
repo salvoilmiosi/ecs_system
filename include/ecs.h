@@ -5,7 +5,6 @@
 #include "growing_array.h"
 
 #include <bitset>
-#include <functional>
 
 namespace ecs {
 
@@ -196,10 +195,11 @@ void world<ComponentList, MaxEntities>::updateEntities() {
 template<typename ... Ts>
 class system {
 private:
-	std::function<void(entity_id, Ts& ...)> func;
+	typedef void (*system_func) (entity_id, Ts&...);
+	system_func func;
 
 public:
-	system(decltype(func) func) : func(func) {}
+	system(system_func func) : func(func) {}
 
 	template<typename ComponentList, size_t MaxEntities>
 	void execute(world<ComponentList, MaxEntities> &wld);
@@ -213,6 +213,11 @@ void system<Ts...>::execute(world<ComponentList, MaxEntities> &wld) {
 			func(ent, wld.template getComponent<Ts>(ent) ...);
 		}
 	});
+}
+
+template<typename ... Systems>
+inline auto tuple_of_systems(Systems ... Ss) {
+	return std::make_tuple(system(Ss) ...);
 }
 
 }

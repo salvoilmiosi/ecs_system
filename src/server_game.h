@@ -19,9 +19,8 @@ public:
 		wld.executeSystem<position, velocity>(move_func);
 		wld.executeSystem<velocity, acceleration>(accelerate_func);
 		wld.executeSystem<scale, shrinking>(shrink_func);
-
+		wld.executeSystem<health>(health_tick_func);
 		wld.executeSystem<health>([&](ecs::entity_id me, health &hp) {
-			--hp.value;
 			if (hp.value <= 0) {
 				wld.removeEntity(me);
 			}

@@ -17,13 +17,6 @@ ecs::world_in<MyComponents> wld;
 
 socket::client_socket sock;
 
-void health_tick_func(ecs::entity_id me, health &hp) {
-	--hp.value;
-	if (hp.value <= 0) {
-		wld.removeEntity(me);
-	}
-}
-
 void particle_generator_func(ecs::entity_id, position &pos, generator &gen) {
 	for (int i=0; i<gen.particles_per_tick; ++i) {
 		Uint8 r = rand() % 0xff;
@@ -126,6 +119,11 @@ static void tick() {
 	wld.executeSystem<velocity, acceleration>(accelerate_func);
 	wld.executeSystem<scale, shrinking>(shrink_func);
 	wld.executeSystem<health>(health_tick_func);
+	wld.executeSystem<health>([&](ecs::entity_id me, health &hp) {
+		if (hp.value <= 0) {
+			wld.removeEntity(me);
+		}
+	})
 
 	wld.updateEntities();
 

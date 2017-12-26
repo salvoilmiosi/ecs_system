@@ -19,3 +19,7 @@ void accelerate_func(ecs::entity_id, velocity &vel, acceleration &acc) {
 void shrink_func(ecs::entity_id, scale &sca, shrinking &shr) {
 	sca.value *= shr.value;
 };
+
+void health_tick_func(ecs::entity_id, health &hp) {
+	--hp.value;
+};

@@ -32,8 +32,6 @@ public:
 		disconnect();
 	}
 
-	bool openListenServer();
-
 	bool connect(IPaddress addr);
 
 	void close(const char *msg);

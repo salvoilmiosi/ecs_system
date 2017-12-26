@@ -11,12 +11,9 @@ OUT ?= out
 INC_DIR ?= include
 BIN_DIR ?= bin
 BUILD ?= 
+MAIN ?=
 
-OBJ_DIR = obj/$(SRC)
-
-ifeq ($(OS),Windows_NT)
-	override OUT := $(OUT).exe
-endif
+OBJ_DIR = obj
 
 ifdef BUILD
 	BIN_DIR := $(BUILD)/$(BIN_DIR)
@@ -28,7 +25,17 @@ $(shell mkdir -p $(OBJ_DIR) >/dev/null)
 
 DEPFLAGS = -MT $@ -MMD -MP -MF $(OBJ_DIR)/$*.Td
 
-SOURCES = $(wildcard $(SRC)/*.cpp)
+SOURCES = $(filter-out $(MAINS), $(wildcard $(SRC)/*.cpp))
+
+ifdef MAIN
+	override OUT := $(OUT)_$(MAIN)
+	SOURCES += $(SRC)/$(MAIN)_main.cpp
+endif
+
+ifeq ($(OS),Windows_NT)
+	override OUT := $(OUT).exe
+endif
+
 OBJECTS = $(patsubst $(SRC)/%,$(OBJ_DIR)/%.o,$(basename $(SOURCES)))
 
 $(BIN_DIR)/$(OUT): $(OBJECTS)

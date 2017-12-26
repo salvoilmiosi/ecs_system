@@ -3,6 +3,9 @@ export LDFLAGS
 export LIBS
 export BUILD
 
+export MAINS = src/server_main.cpp src/client_main.cpp
+export OUT = ecs_system
+
 ifeq ($(OS),Windows_NT)
 	MAKE := mingw32-make
 	LIBS := -lmingw32 -lSDL2main -lSDL2 -lSDL2_net -pthread
@@ -27,10 +30,10 @@ release:
 	$(MAKE) "BUILD=release"
 
 server:
-	$(MAKE) -f Makefile.generic "OUT=ecs_system_server" "SRC=server"
+	$(MAKE) -f Makefile.generic "MAIN=server"
 
 client:
-	$(MAKE) -f Makefile.generic "OUT=ecs_system_client" "SRC=client"
+	$(MAKE) -f Makefile.generic "MAIN=client"
 
 clean:
 	rm -rf bin

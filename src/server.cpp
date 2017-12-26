@@ -1,29 +1,12 @@
-#include "socket.h"
+#include "server.h"
 
 #include <iostream>
 #include <algorithm>
 
-#include "main.h"
 #include "userinput.h"
-#include "components_serial.h"
+#include "systems.h"
 
 namespace socket {
-
-constexpr uint16_t ntohs(uint16_t num) {
-	return ((num & 0xff00) >> 8) | ((num & 0x00ff) << 8);
-}
-
-const char *ipString(const IPaddress &ip) {
-	static char addr_name[128];
-	memset(addr_name, 0, 128);
-	uint32_t full_ip = ip.host;
-	uint8_t addr1 = (full_ip & 0x000000ff) >> (0 * 8);
-	uint8_t addr2 = (full_ip & 0x0000ff00) >> (1 * 8);
-	uint8_t addr3 = (full_ip & 0x00ff0000) >> (2 * 8);
-	uint8_t addr4 = (full_ip & 0xff000000) >> (3 * 8);
-	sprintf(addr_name, "%d.%d.%d.%d:%d", addr1, addr2, addr3, addr4, ntohs(ip.port));
-	return addr_name;
-}
 
 bool server_socket::open(uint16_t port) {
 	sock = SDLNet_UDP_Open(port);
@@ -199,14 +182,14 @@ void server_socket::parseCommand(client_info &sender, packet_data_in &in) {
 }
 
 void server_socket::parseInput(client_info &sender, packet_data_in &in) {
-	input_command cmd;
-	cmd.cmd = static_cast<command_type>(readByte(in));
+	userinput::command cmd;
+	cmd.cmd = static_cast<userinput::command_type>(readByte(in));
 
-	if (cmd.cmd == CMD_NONE) return;
+	if (cmd.cmd == userinput::CMD_NONE) return;
 
 	cmd.pos = readBinary<position>(in);
 
-	sender.input.handleCommand(cmd);
+	sender.input.handleCommand(wld, cmd);
 }
 
 
@@ -214,7 +197,7 @@ void server_socket::stateClient(client_info &sender) {
 	packet_data_out packet;
 
 	writeByte(packet, PACKET_EDITLOG);
-	server::wld.logState().write(packet);
+	wld.logState().write(packet);
 	
 	send(packet.data(), sender.address);
 }

@@ -1,5 +1,5 @@
-#ifndef __SOCKET_H__
-#define __SOCKET_H__
+#ifndef __CLIENT_H__
+#define __CLIENT_H__
 
 #include <SDL2/SDL_net.h>
 
@@ -10,27 +10,13 @@
 #include <map>
 #include <string>
 
+#include "ecs_net.h"
 #include "packet_data.h"
 #include "userinput.h"
+#include "components_serial.h"
+#include "socket.h"
 
 namespace socket {
-
-static const uint16_t PORT = 2345;
-static const int PACKET_SIZE = 1024;
-static const int CHECK_TIMEOUT = 1000;
-static const int CLIENT_TIMEOUT = 5000;
-
-enum packet_type {
-	PACKET_NONE,
-	PACKET_SLICED,
-	
-	PACKET_EDITLOG,
-	PACKET_SERVERMSG,
-
-	PACKET_USER_CONNECT,
-	PACKET_USER_COMMAND,
-	PACKET_USER_INPUT
-};
 
 class client_socket {
 public:
@@ -45,6 +31,8 @@ public:
 	~client_socket() {
 		disconnect();
 	}
+
+	bool openListenServer();
 
 	bool connect(IPaddress addr);
 
@@ -69,7 +57,7 @@ public:
 			joined.pop_front();
 		}
 	}
-
+	
 private:
 	UDPsocket sock = NULL;
 

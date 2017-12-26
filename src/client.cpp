@@ -1,14 +1,9 @@
-#include "socket.h"
-#include "main.h"
+#include "client.h"
 
 #include <algorithm>
 #include <iostream>
 
 namespace socket {
-
-static inline bool operator == (const IPaddress &a, const IPaddress &b) {
-	return a.host == b.host && a.port == b.port;
-}
 
 bool client_socket::connect(IPaddress addr) {
 	server_addr = addr;

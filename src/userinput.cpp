@@ -1,5 +1,7 @@
 #include "userinput.h"
 
+#include "systems.h"
+
 namespace userinput {
 
 command handleEvent(const SDL_Event &event) {

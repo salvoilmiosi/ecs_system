@@ -125,6 +125,16 @@ public:
 	}
 
 	void updateEntities();
+
+	template<typename ... Ts>
+	void executeSystem(const auto &func) {
+		static component_mask mask = generateMask<Ts...>();
+		forEachEntity([&](entity_id ent) {
+			if (entityMatches(ent, mask)) {
+				func(ent, getComponent<Ts>(ent) ...);
+			}
+		});
+	}
 };
 
 template<typename ComponentList, size_t MaxEntities>
@@ -190,34 +200,6 @@ void world<ComponentList, MaxEntities>::updateEntities() {
 
 	end_of_loop:
 	currentSize = nextSize = iD;
-}
-
-template<typename ... Ts>
-class system {
-private:
-	typedef void (*system_func) (entity_id, Ts&...);
-	system_func func;
-
-public:
-	system(system_func func) : func(func) {}
-
-	template<typename ComponentList, size_t MaxEntities>
-	void execute(world<ComponentList, MaxEntities> &wld);
-};
-
-template<typename ... Ts> template<typename ComponentList, size_t MaxEntities>
-void system<Ts...>::execute(world<ComponentList, MaxEntities> &wld) {
-	static auto mask = wld.template generateMask<Ts ...>();
-	wld.forEachEntity([&](entity_id ent) {
-		if (wld.entityMatches(ent, mask)) {
-			func(ent, wld.template getComponent<Ts>(ent) ...);
-		}
-	});
-}
-
-template<typename ... Systems>
-inline auto tuple_of_systems(Systems ... Ss) {
-	return std::make_tuple(system(Ss) ...);
 }
 
 }

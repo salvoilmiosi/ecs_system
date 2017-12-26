@@ -1,5 +1,5 @@
-#ifndef __SOCKET_H__
-#define __SOCKET_H__
+#ifndef __SERVER_H__
+#define __SERVER_H__
 
 #include <SDL2/SDL_net.h>
 
@@ -8,40 +8,16 @@
 #include <vector>
 
 #include "packet_data.h"
-#include "components_serial.h"
 #include "userinput.h"
+#include "ecs_net.h"
+#include "components_serial.h"
+#include "socket.h"
 
 namespace socket {
 
-const char *ipString(const IPaddress &ip);
-
-inline bool operator == (const IPaddress &a, const IPaddress &b) {
-	return a.host == b.host && a.port == b.port;
-}
-
-static const uint16_t PORT = 2345; 
-static const int PACKET_SIZE = 1024;
-static const int CHECK_TIMEOUT = 1000;
-static const int CLIENT_TIMEOUT = 5000;
-
-static const uint8_t COMMAND_HANDLE = 0xec;
-static const uint8_t INPUT_HANDLE = 0xc5;
-
-enum packet_type {
-	PACKET_NONE,
-	PACKET_SLICED,
-
-	PACKET_EDITLOG,
-	PACKET_SERVERMSG,
-
-	PACKET_USER_CONNECT,
-	PACKET_USER_COMMAND,
-	PACKET_USER_INPUT
-};
-
 class server_socket {
 public:
-	server_socket() {
+	server_socket(auto &wld) : wld(wld) {
 		sock_set = SDLNet_AllocSocketSet(1);
 	}
 
@@ -62,6 +38,8 @@ private:
 	void sendRaw(packet_data packet, IPaddress addr);
 	void sendSliced(const packet_data &packet, IPaddress addr);
 
+	ecs::world_out<MyComponents> &wld;
+
 	UDPsocket sock = NULL;
 	SDLNet_SocketSet sock_set;
 
@@ -72,13 +50,14 @@ private:
 	struct client_info {
 		IPaddress address;
 		Uint32 last_seen;
-		userinput input;
+		userinput::handler input;
 	};
 
 	std::vector<client_info> clients_connected;
 	std::mutex c_mutex;
-
+	
 	void received(UDPpacket &packet);
+
 	void addClient(IPaddress address);
 
 	void parseCommand(client_info &sender, packet_data_in &reader);

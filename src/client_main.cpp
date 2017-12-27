@@ -63,11 +63,11 @@ static bool initSDL(const char *title) {
 	SDL_Window *window = SDL_CreateWindow(title,
 		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
 		SCREEN_W, SCREEN_H, SDL_WINDOW_SHOWN);
-	if (window == NULL)
+	if (window == nullptr)
 		return false;
 
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-	if (renderer == NULL)
+	if (renderer == nullptr)
 		return false;
 
 	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
@@ -114,7 +114,6 @@ static void readPackets() {
 
 static void tick() {
 	wld.executeSystem<position, generator>(particle_generator_func);
-	wld.executeSystem<printable, position>(print_func);
 	wld.executeSystem<position, velocity>(move_func);
 	wld.executeSystem<velocity, acceleration>(accelerate_func);
 	wld.executeSystem<scale, shrinking>(shrink_func);
@@ -123,7 +122,7 @@ static void tick() {
 		if (hp.value <= 0) {
 			wld.removeEntity(me);
 		}
-	})
+	});
 
 	wld.updateEntities();
 
@@ -158,7 +157,7 @@ int main (int argc, char** argv) {
 
 	IPaddress addr;
 	if (SDLNet_ResolveHost(&addr, addr_str, socket::PORT)) {
-		std::cout << "Could not resolve " << addr_str << std::endl;
+		socket::log("Could not resolve %s\n", addr_str);
 		return 2;
 	}
 

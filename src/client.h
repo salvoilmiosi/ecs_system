@@ -38,7 +38,7 @@ public:
 	void disconnect();
 
 	bool is_open() {
-		return sock != NULL;
+		return sock != nullptr;
 	}
 
 	bool sendCommand(const std::string &cmd);
@@ -57,7 +57,7 @@ public:
 	}
 	
 private:
-	UDPsocket sock = NULL;
+	UDPsocket sock = nullptr;
 
 	SDLNet_SocketSet sock_set;
 

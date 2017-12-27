@@ -40,7 +40,7 @@ private:
 
 	ecs::world_out<MyComponents> &wld;
 
-	UDPsocket sock = NULL;
+	UDPsocket sock = nullptr;
 	SDLNet_SocketSet sock_set;
 
 	std::thread serv_thread;

@@ -3,6 +3,8 @@
 
 #include <SDL2/SDL_net.h>
 
+#include "logger.h"
+
 namespace socket {
 
 static const uint16_t PORT = 2345;
@@ -40,6 +42,13 @@ inline char *ipString(const IPaddress &ip) {
 
 constexpr bool operator == (const IPaddress &a, const IPaddress &b) {
 	return a.host == b.host && a.port == b.port;
+}
+
+extern logger log_i;
+
+template<typename ... Ts>
+void log(const char *format, Ts ... args) {
+	log_i.log(format, args ...);
 }
 
 }

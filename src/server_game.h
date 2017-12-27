@@ -15,7 +15,6 @@ public:
 	}
 
 	void tick() {
-		wld.executeSystem<printable, position>(print_func);
 		wld.executeSystem<position, velocity>(move_func);
 		wld.executeSystem<velocity, acceleration>(accelerate_func);
 		wld.executeSystem<scale, shrinking>(shrink_func);

@@ -5,13 +5,6 @@
 
 #include "ecs.h"
 
-struct printable {
-	std::string name;
-
-	printable() {}
-	printable(std::string name) : name(name) {}
-};
-
 struct sprite {
 	std::string src;
 	int color = 0;
@@ -74,6 +67,6 @@ struct generator {
 };
 
 using MyComponents = ecs::component_list<
-	printable, sprite, position, velocity, acceleration, scale, shrinking, health, generator>;
+	sprite, position, velocity, acceleration, scale, shrinking, health, generator>;
 
 #endif

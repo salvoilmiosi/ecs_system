@@ -16,7 +16,7 @@ bool server_socket::open(uint16_t port) {
 		return false;
 	}
 
-	std::cout << "Server open on port " << port << std::endl;
+	socket::log("Server open on port %d\n", port);
 
 	SDLNet_UDP_AddSocket(sock_set, sock);
 
@@ -48,7 +48,7 @@ void server_socket::close() {
 	if (sock) {
 		SDLNet_UDP_DelSocket(sock_set, sock);
 		SDLNet_UDP_Close(sock);
-		sock = NULL;
+		sock = nullptr;
 	}
 	if (serv_thread.joinable()) {
 		serv_thread.join();
@@ -71,9 +71,7 @@ void server_socket::sendRaw(packet_data data, IPaddress addr) {
 	packet.maxlen = PACKET_SIZE;
 	packet.address = addr;
 	
-	if (!SDLNet_UDP_Send(sock, packet.channel, &packet)) {
-		std::cout << "Lost packet" << std::endl;
-	}
+	SDLNet_UDP_Send(sock, packet.channel, &packet);
 }
 
 void server_socket::sendSliced(const packet_data &data, IPaddress addr) {
@@ -165,7 +163,7 @@ void server_socket::addClient(IPaddress address) {
 	sender.last_seen = SDL_GetTicks();
 
 	clients_connected.push_back(sender);
-	std::cout << ipString(address) << " connected" << std::endl;
+	socket::log("%s connected.\n", ipString(address));
 
 	stateClient(sender);
 }
@@ -211,7 +209,7 @@ void server_socket::delClient(client_info &sender) {
 
 	clients_connected.erase(std::remove_if(clients_connected.begin(), clients_connected.end(), [&](auto &c) {
 		if (c.address == sender.address) {
-			std::cout << ipString(c.address) << " disconnected" << std::endl;
+			socket::log("%s disconnected.\n", ipString(c.address));
 			return true;
 		} else {
 			return false;
@@ -226,7 +224,7 @@ void server_socket::testClients() {
 
 	clients_connected.erase(std::remove_if(clients_connected.begin(), clients_connected.end(), [&](auto &c) {
 		if (now - c.last_seen > CLIENT_TIMEOUT) {
-			std::cout << ipString(c.address) << " timed out" << std::endl;
+			socket::log("%s timed out.\n", ipString(c.address));
 			return true;
 		} else {
 			return false;

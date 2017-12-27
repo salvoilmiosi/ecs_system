@@ -4,10 +4,6 @@
 #include "components.h"
 #include "packet_data.h"
 
-template<> inline printable readBinary(packet_data_in &in) {
-	return printable(readString(in));
-}
-
 template<> inline sprite readBinary(packet_data_in &in) {
 	sprite obj;
 	obj.src = readString(in);
@@ -41,10 +37,6 @@ template<> inline health readBinary(packet_data_in &in) {
 
 template<> inline generator readBinary(packet_data_in &in) {
 	return generator(readLong(in));
-}
-
-template<> inline void writeBinary(packet_data_out &out, const printable &obj) {
-	writeString(out, obj.name);
 }
 
 template<> inline void writeBinary(packet_data_out &out, const sprite &obj) {

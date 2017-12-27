@@ -49,9 +49,9 @@ void client_socket::close(const char *msg) {
 	if (is_open()) {
 		SDLNet_UDP_DelSocket(sock_set, sock);
 		SDLNet_UDP_Close(sock);
-		sock = NULL;
+		sock = nullptr;
 
-		std::cout << msg << std::endl;
+		socket::log("%s\n", msg);
 	}
 }
 

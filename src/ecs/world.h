@@ -127,7 +127,7 @@ public:
 	void updateEntities();
 
 	template<typename ... Ts>
-	void executeSystem(const auto &func) {
+	void executeSystem(auto &&func) {
 		static component_mask mask = generateMask<Ts...>();
 		forEachEntity([&](entity_id ent) {
 			if (entityMatches(ent, mask)) {

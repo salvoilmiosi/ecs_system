@@ -4,7 +4,6 @@
 #include "world.h"
 
 #include "edit_logger.h"
-#include "ecs/packet_data.h"
 
 namespace ecs {
 

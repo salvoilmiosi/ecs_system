@@ -25,9 +25,9 @@ private:
 
 	SDL_Renderer* const& renderer;
 
-	void particle_generator_func(ecs::entity_id, position &pos, generator &gen);
+	void generateParticles(ecs::entity_id, position &pos, generator &gen);
 
-	void draw_func(ecs::entity_id, sprite &spr, position &pos, scale &s);
+	void renderEntity(ecs::entity_id, sprite &spr, position &pos, scale &s);
 };
 
 }

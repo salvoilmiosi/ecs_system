@@ -1,5 +1,7 @@
 #include "packet_data.h"
 
+#include <algorithm>
+
 uint8_t readByte(packet_reader &in) {
 	return *(in.read(sizeof(uint8_t)));
 }

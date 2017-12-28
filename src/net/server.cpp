@@ -3,9 +3,6 @@
 #include <iostream>
 #include <algorithm>
 
-#include "game/userinput.h"
-#include "game/systems.h"
-
 namespace net {
 
 bool server_socket::open(uint16_t port) {

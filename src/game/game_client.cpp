@@ -1,21 +1,30 @@
 #include "game_client.h"
 
-#include "systems.h"
+#include "components.h"
 
 namespace game {
 
 void game_client::tick() {
-	wld.executeSystem<position, generator>([&](ecs::entity_id id, position &pos, generator &gen) {
-		particle_generator_func(id, pos, gen);
+	wld.executeSystem<position, velocity>([&](ecs::entity_id id, position &pos, velocity &vel) {
+		pos.x += vel.x;
+		pos.y += vel.y;
 	});
-	wld.executeSystem<position, velocity>(move_func);
-	wld.executeSystem<velocity, acceleration>(accelerate_func);
-	wld.executeSystem<scale, shrinking>(shrink_func);
-	wld.executeSystem<health>(health_tick_func);
+	wld.executeSystem<velocity, acceleration>([&](ecs::entity_id id, velocity &vel, acceleration &acc) {
+		vel.x += acc.x;
+		vel.y += acc.y;
+	});
+	wld.executeSystem<scale, shrinking>([&](ecs::entity_id id, scale &sca, shrinking &shr) {
+		sca.value *= shr.value;
+	});
 	wld.executeSystem<health>([&](ecs::entity_id me, health &hp) {
+		--hp.value;
 		if (hp.value <= 0) {
 			wld.removeEntity(me);
 		}
+	});
+
+	wld.executeSystem<position, generator>([&](ecs::entity_id id, position &pos, generator &gen) {
+		generateParticles(id, pos, gen);
 	});
 
 	wld.updateEntities();
@@ -23,13 +32,13 @@ void game_client::tick() {
 
 void game_client::render() {
 	wld.executeSystem<sprite, position, scale>([&](ecs::entity_id id, sprite &spr, position &pos, scale &sca) {
-		draw_func(id, spr, pos, sca);
+		renderEntity(id, spr, pos, sca);
 	});
 
 	SDL_RenderPresent(renderer);
 }
 
-void game_client::particle_generator_func(ecs::entity_id, position &pos, generator &gen) {
+void game_client::generateParticles(ecs::entity_id, position &pos, generator &gen) {
 	for (int i=0; i<gen.particles_per_tick; ++i) {
 		Uint8 r = rand() % 0xff;
 		Uint8 g = rand() % 0xff;
@@ -60,7 +69,7 @@ void game_client::particle_generator_func(ecs::entity_id, position &pos, generat
 	}
 }
 
-void game_client::draw_func(ecs::entity_id, sprite &spr, position &pos, scale &s) {
+void game_client::renderEntity(ecs::entity_id, sprite &spr, position &pos, scale &s) {
 	SDL_Rect rect {(int)(pos.x - s.value * 0.5f), (int)(pos.y - s.value * 0.5f), (int)s.value, (int)s.value};
 	Uint8 r = (spr.color & 0xff000000) >> (8 * 3);
 	Uint8 g = (spr.color & 0x00ff0000) >> (8 * 2);

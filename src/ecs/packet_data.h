@@ -5,7 +5,6 @@
 
 #include <vector>
 #include <string>
-#include <algorithm>
 
 typedef std::vector<uint8_t> packet_data;
 

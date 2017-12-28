@@ -1,7 +1,7 @@
 #ifndef __SERVER_GAME_H__
 #define __SERVER_GAME_H__
 
-#include "systems.h"
+#include "ecs/world_io.h"
 
 #include "net/server.h"
 

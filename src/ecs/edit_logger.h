@@ -97,10 +97,12 @@ void edit_logger<ComponentList>::read(packet_reader &in) {
 		if (edit.type != EDIT_MASK) {
 			mpl::for_each_in_tuple(edit.data, [&](auto &comp) {
 				using component_type = typename std::remove_reference<decltype(comp)>::type;
-				auto c_mask = world<ComponentList>::template generateMask<component_type> ();
-				if ((edit.mask & c_mask) == c_mask) {
-					CHECK_CHAR('C');
-					comp = readBinary<component_type>(in);
+				if (! std::is_base_of<tag, component_type>::value) {
+					auto c_mask = world<ComponentList>::template generateMask<component_type> ();
+					if ((edit.mask & c_mask) == c_mask) {
+						CHECK_CHAR('C');
+						comp = readBinary<component_type>(in);
+					}
 				}
 			});
 		}
@@ -128,10 +130,12 @@ void edit_logger<ComponentList>::write(packet_writer &out) {
 
 		mpl::for_each_in_tuple(edit.data, [&](auto &comp) {
 			using component_type = typename std::remove_reference<decltype(comp)>::type;
-			auto c_mask = world<ComponentList>::template generateMask<component_type>();
-			if ((edit.mask & c_mask) == c_mask) {
-				writeByte(out, 'C');
-				writeBinary<component_type>(out, comp);
+			if (! std::is_base_of<tag, component_type>::value) {
+				auto c_mask = world<ComponentList>::template generateMask<component_type>();
+				if ((edit.mask & c_mask) == c_mask) {
+					writeByte(out, 'C');
+					writeBinary<component_type>(out, comp);
+				}
 			}
 		});
 	});

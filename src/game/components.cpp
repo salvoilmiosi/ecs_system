@@ -33,10 +33,6 @@ template<> health readBinary(packet_reader &in) {
 	return health(readLong(in));
 }
 
-template<> generator readBinary(packet_reader &in) {
-	return generator(readLong(in));
-}
-
 template<> void writeBinary(packet_writer &out, const sprite &obj) {
 	writeString(out, obj.src);
 	writeLong(out, obj.color);
@@ -67,8 +63,4 @@ template<> void writeBinary(packet_writer &out, const shrinking &obj) {
 
 template<> void writeBinary(packet_writer &out, const health &obj) {
 	writeLong(out, obj.value);
-}
-
-template<> void writeBinary(packet_writer &out, const generator &obj) {
-	writeLong(out, obj.particles_per_tick);
 }

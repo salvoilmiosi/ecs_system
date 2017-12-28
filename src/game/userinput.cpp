@@ -5,7 +5,7 @@ namespace game::userinput {
 void handler::handleCommand(ecs::world_io<MyComponents> &wld, command cmd) {
 	switch (cmd.cmd) {
 	case CMD_DOWN:
-		ent = wld.createEntity(cmd.pos, generator(5));
+		ent = wld.createEntity(cmd.pos, generator());
 		break;
 	case CMD_UP:
 		wld.addComponent(ent, health(5));

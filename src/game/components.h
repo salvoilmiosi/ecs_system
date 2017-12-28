@@ -59,12 +59,7 @@ struct health {
 	health(int value) : value(value) {}
 };
 
-struct generator {
-	int particles_per_tick = 7;
-
-	generator() {}
-	generator(int ptt) : particles_per_tick(ptt) {}
-};
+struct generator : ecs::tag { };
 
 using MyComponents = ecs::component_list<
 	sprite, position, velocity, acceleration, scale, shrinking, health, generator>;

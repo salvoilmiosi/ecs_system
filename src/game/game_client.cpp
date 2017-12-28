@@ -39,7 +39,7 @@ void game_client::render() {
 }
 
 void game_client::generateParticles(ecs::entity_id, position &pos, generator &gen) {
-	for (int i=0; i<gen.particles_per_tick; ++i) {
+	for (int i=0; i<5; ++i) {
 		Uint8 r = rand() % 0xff;
 		Uint8 g = rand() % 0xff;
 		Uint8 b = rand() % 0xff;

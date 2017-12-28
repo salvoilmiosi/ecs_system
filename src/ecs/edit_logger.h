@@ -47,6 +47,7 @@ public:
 	}
 
 	void read(packet_reader &in);
+	void write(packet_writer &out);
 
 	// iterates over the deque while clearing it
 	template<typename Func>
@@ -58,40 +59,20 @@ public:
 		}
 	}
 
-	void write(packet_writer &out);
-
 private:
 	std::deque<entity_edit> edits;
 };
-
-class syntax_error : public std::invalid_argument {
-public:
-	syntax_error(char expected, char got, packet_reader &in) :
-		std::invalid_argument(msg(expected, got, in.at() - 1)) {}
-
-private:
-	std::string msg(char expected, char got, size_t at) {
-		std::ostringstream ss;
-		ss << "Expected " << expected << " in position " << at << ", got " << got;
-		return ss.str();
-	}
-};
-
-#define CHECK_CHAR(x) if (char got = readByte(in); got != x) throw syntax_error(x, got, in)
 
 template<typename ComponentList>
 void edit_logger<ComponentList>::read(packet_reader &in) {
 	while (! in.eof()) {
 		auto edit = create();
-		CHECK_CHAR('T');
 		edit.type = static_cast<edit_type>(readByte(in));
 
 		if (edit.type == EDIT_NONE) continue;
-		CHECK_CHAR('I');
 		
 		edit.id = readLongLong(in);
 
-		CHECK_CHAR('M');
 		edit.mask = readLongLong(in);
 
 		if (edit.type != EDIT_MASK) {
@@ -100,7 +81,6 @@ void edit_logger<ComponentList>::read(packet_reader &in) {
 				if constexpr (! std::is_base_of<tag, component_type>::value) {
 					auto c_mask = world<ComponentList>::template generateMask<component_type> ();
 					if ((edit.mask & c_mask) == c_mask) {
-						CHECK_CHAR('C');
 						comp.read(in);
 					}
 				}
@@ -111,19 +91,14 @@ void edit_logger<ComponentList>::read(packet_reader &in) {
 	}
 }
 
-#undef CHECK_CHAR
-
 template<typename ComponentList>
 void edit_logger<ComponentList>::write(packet_writer &out) {
 	forEachEdit([&](auto &edit){
-		writeByte(out, 'T');
 		writeByte(out, edit.type);
 
 		if (edit.type == EDIT_NONE) return;
 
-		writeByte(out, 'I');
 		writeLongLong(out, edit.id);
-		writeByte(out, 'M');
 		writeLongLong(out, edit.mask.to_ullong());
 
 		if (edit.type == EDIT_MASK) return;
@@ -133,7 +108,6 @@ void edit_logger<ComponentList>::write(packet_writer &out) {
 			if constexpr (! std::is_base_of<tag, component_type>::value) {
 				auto c_mask = world<ComponentList>::template generateMask<component_type>();
 				if ((edit.mask & c_mask) == c_mask) {
-					writeByte(out, 'C');
 					comp.write(out);
 				}
 			}

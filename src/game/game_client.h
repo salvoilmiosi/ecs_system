@@ -5,7 +5,7 @@
 
 #include "ecs/world_io.h"
 
-#include "components_serial.h"
+#include "components.h"
 
 namespace game {
 

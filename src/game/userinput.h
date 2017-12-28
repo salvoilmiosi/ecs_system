@@ -5,7 +5,6 @@
 
 #include "ecs/world_io.h"
 
-#include "components_serial.h"
 #include "systems.h"
 
 namespace game::userinput {

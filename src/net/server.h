@@ -10,7 +10,6 @@
 #include "ecs/world_io.h"
 
 #include "game/userinput.h"
-#include "game/components_serial.h"
 
 #include "socket.h"
 

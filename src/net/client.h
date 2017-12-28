@@ -14,7 +14,6 @@
 #include "ecs/packet_data.h"
 
 #include "game/userinput.h"
-#include "game/components_serial.h"
 
 #include "socket.h"
 

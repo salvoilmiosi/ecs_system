@@ -3,9 +3,12 @@
 
 #include <SDL2/SDL_net.h>
 
+#include <mutex>
+#include <iostream>
+
 #include "logger.h"
 
-namespace socket {
+namespace net {
 
 static const uint16_t PORT = 2345;
 static const int PACKET_SIZE = 1024;
@@ -42,13 +45,6 @@ inline char *ipString(const IPaddress &ip) {
 
 constexpr bool operator == (const IPaddress &a, const IPaddress &b) {
 	return a.host == b.host && a.port == b.port;
-}
-
-extern logger log_i;
-
-template<typename ... Ts>
-void log(const char *format, Ts ... args) {
-	log_i.log(format, args ...);
 }
 
 }

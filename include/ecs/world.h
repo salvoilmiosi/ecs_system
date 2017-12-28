@@ -1,5 +1,5 @@
-#ifndef __ECS_H__
-#define __ECS_H__
+#ifndef __WORLD_H__
+#define __WORLD_H__
 
 #include "mpl.h"
 #include "growing_array.h"
@@ -204,4 +204,4 @@ void world<ComponentList, MaxEntities>::updateEntities() {
 
 }
 
-#endif //__ECS_H__
+#endif //__WORLD_H__

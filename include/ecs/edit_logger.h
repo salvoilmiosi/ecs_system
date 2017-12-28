@@ -46,7 +46,7 @@ public:
 		edits.push_back(edit);
 	}
 
-	void read(packet_data_in &in);
+	void read(packet_reader &in);
 
 	// iterates over the deque while clearing it
 	template<typename Func>
@@ -58,7 +58,7 @@ public:
 		}
 	}
 
-	void write(packet_data_out &out);
+	void write(packet_writer &out);
 
 private:
 	std::deque<entity_edit> edits;
@@ -66,7 +66,7 @@ private:
 
 class syntax_error : public std::invalid_argument {
 public:
-	syntax_error(char expected, char got, packet_data_in &in) :
+	syntax_error(char expected, char got, packet_reader &in) :
 		std::invalid_argument(msg(expected, got, in.at() - 1)) {}
 
 private:
@@ -80,7 +80,7 @@ private:
 #define CHECK_CHAR(x) if (char got = readByte(in); got != x) throw syntax_error(x, got, in)
 
 template<typename ComponentList>
-void edit_logger<ComponentList>::read(packet_data_in &in) {
+void edit_logger<ComponentList>::read(packet_reader &in) {
 	while (! in.eof()) {
 		auto edit = create();
 		CHECK_CHAR('T');
@@ -112,7 +112,7 @@ void edit_logger<ComponentList>::read(packet_data_in &in) {
 #undef CHECK_CHAR
 
 template<typename ComponentList>
-void edit_logger<ComponentList>::write(packet_data_out &out) {
+void edit_logger<ComponentList>::write(packet_writer &out) {
 	forEachEdit([&](auto &edit){
 		writeByte(out, 'T');
 		writeByte(out, edit.type);

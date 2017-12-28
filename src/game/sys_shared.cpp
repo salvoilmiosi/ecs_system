@@ -1,5 +1,7 @@
 #include "systems.h"
 
+namespace game {
+
 void move_func(ecs::entity_id, position &pos, velocity &vel) {
 	pos.x += vel.x;
 	pos.y += vel.y;
@@ -17,3 +19,5 @@ void shrink_func(ecs::entity_id, scale &sca, shrinking &shr) {
 void health_tick_func(ecs::entity_id, health &hp) {
 	--hp.value;
 };
+
+}

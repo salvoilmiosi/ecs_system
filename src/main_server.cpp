@@ -1,7 +1,8 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_net.h>
 
-#include "server_game.h"
+#include "game/game_server.h"
+
 #include "timer.h"
 
 struct thread_wrapper {
@@ -26,7 +27,7 @@ int main (int argc, char** argv) {
 	if (SDLNet_Init() == -1)
 		return 2;
 
-	server::game game;
+	game::game_server game;
 
 	if (!game.open())
 		return 3;
@@ -47,8 +48,8 @@ int main (int argc, char** argv) {
 
 		game.tick();
 
-		if (fps.get_ticks() < 1000 / socket::TICKRATE) {
-			SDL_Delay(1000 / socket::TICKRATE - fps.get_ticks());
+		if (fps.get_ticks() < 1000 / net::TICKRATE) {
+			SDL_Delay(1000 / net::TICKRATE - fps.get_ticks());
 		}
 	}
 

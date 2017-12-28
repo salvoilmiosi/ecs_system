@@ -1,8 +1,26 @@
 #include "userinput.h"
 
-#include "systems.h"
+namespace game::userinput {
 
-namespace userinput {
+void handler::handleCommand(ecs::world_io<MyComponents> &wld, command cmd) {
+	switch (cmd.cmd) {
+	case CMD_DOWN:
+		ent = wld.createEntity(cmd.pos, generator(5));
+		break;
+	case CMD_UP:
+		wld.addComponent(ent, health(5));
+		ent = 0;
+		break;
+	case CMD_MOVE:
+		if (ent) {
+			wld.addComponent(ent, cmd.pos);
+		}
+		break;
+	case CMD_NONE:
+	default:
+		break;
+	}
+}
 
 command handleEvent(const SDL_Event &event) {
 	command cmd;

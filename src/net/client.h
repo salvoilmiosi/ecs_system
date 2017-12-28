@@ -10,13 +10,15 @@
 #include <map>
 #include <string>
 
-#include "ecs_net.h"
-#include "packet_data.h"
-#include "userinput.h"
-#include "components_serial.h"
+#include "ecs/world_io.h"
+#include "ecs/packet_data.h"
+
+#include "game/userinput.h"
+#include "game/components_serial.h"
+
 #include "socket.h"
 
-namespace socket {
+namespace net {
 
 class client_socket {
 public:
@@ -43,7 +45,7 @@ public:
 
 	bool sendCommand(const std::string &cmd);
 
-	bool sendInputCommand(const userinput::command &e);
+	bool sendInputCommand(const game::userinput::command &e);
 
 	bool send(packet_data data);
 	

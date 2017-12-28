@@ -8,7 +8,7 @@ LDFLAGS ?=
 LIBS ?=
 SRC ?= src
 OUT ?= out
-INC_DIR ?= include
+INC_DIR ?= include $(SRC)
 BIN_DIR ?= bin
 BUILD ?= 
 MAIN ?=
@@ -25,11 +25,11 @@ $(shell mkdir -p $(OBJ_DIR) >/dev/null)
 
 DEPFLAGS = -MT $@ -MMD -MP -MF $(OBJ_DIR)/$*.Td
 
-SOURCES = $(filter-out $(MAINS), $(wildcard $(SRC)/*.cpp))
+SOURCES = $(filter-out $(MAINS),$(shell find $(SRC)/ -type f -name '*.cpp'))
 
 ifdef MAIN
 	override OUT := $(OUT)_$(MAIN)
-	SOURCES += $(SRC)/$(MAIN)_main.cpp
+	SOURCES += $(SRC)/main_$(MAIN).cpp
 endif
 
 ifeq ($(OS),Windows_NT)
@@ -45,7 +45,7 @@ all: $(BIN_DIR)/$(OUT)
 
 $(OBJ_DIR)/%.o : $(SRC)/%.cpp
 $(OBJ_DIR)/%.o : $(SRC)/%.cpp $(OBJ_DIR)/%.d
-	$(CXX) $(DEPFLAGS) $(CFLAGS) -c -I $(INC_DIR) -o $@ $<
+	$(CXX) $(DEPFLAGS) $(CFLAGS) -c $(addprefix -I,$(INC_DIR)) -o $@ $<
 	@mv -f $(OBJ_DIR)/$*.Td $(OBJ_DIR)/$*.d
 
 $(OBJ_DIR)/%.d: ;

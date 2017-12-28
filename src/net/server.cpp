@@ -3,10 +3,10 @@
 #include <iostream>
 #include <algorithm>
 
-#include "userinput.h"
-#include "systems.h"
+#include "game/userinput.h"
+#include "game/systems.h"
 
-namespace socket {
+namespace net {
 
 bool server_socket::open(uint16_t port) {
 	sock = SDLNet_UDP_Open(port);
@@ -16,7 +16,7 @@ bool server_socket::open(uint16_t port) {
 		return false;
 	}
 
-	socket::log("Server open on port %d\n", port);
+	logger::log("Server open on port ", port);
 
 	SDLNet_UDP_AddSocket(sock_set, sock);
 
@@ -56,7 +56,7 @@ void server_socket::close() {
 }
 
 void server_socket::sendServerMsg(const std::string &msg) {
-	packet_data_out out;
+	packet_writer out;
 	writeByte(out, PACKET_SERVERMSG);
 	writeString(out, msg);
 	sendAll(out.data());
@@ -89,7 +89,7 @@ void server_socket::sendSliced(const packet_data &data, IPaddress addr) {
 	for (int remaining = data.size(); remaining > 0;) {
 		size_t packet_len = PACKET_SIZE > (remaining + HEAD_SIZE) ? (remaining + HEAD_SIZE) : PACKET_SIZE;
 		
-		packet_data_out header;
+		packet_writer header;
 		writeByte(header, PACKET_SLICED);
 		writeLong(header, pid);
 		writeByte(header, count);
@@ -124,7 +124,7 @@ void server_socket::sendAll(const packet_data &data) {
 
 void server_socket::received(UDPpacket &packet) {
 	packet_data recv_data(packet.data, packet.data + packet.len);
-	packet_data_in reader(recv_data);
+	packet_reader reader(recv_data);
 
 	packet_type type = static_cast<packet_type>(readByte(reader));
 
@@ -163,12 +163,12 @@ void server_socket::addClient(IPaddress address) {
 	sender.last_seen = SDL_GetTicks();
 
 	clients_connected.push_back(sender);
-	socket::log("%s connected.\n", ipString(address));
+	logger::log(ipString(address), " connected.");
 
 	stateClient(sender);
 }
 
-void server_socket::parseCommand(client_info &sender, packet_data_in &in) {
+void server_socket::parseCommand(client_info &sender, packet_reader &in) {
 	std::string cmd = readString(in);
 	if (cmd == "state") {
 		stateClient(sender);
@@ -179,11 +179,11 @@ void server_socket::parseCommand(client_info &sender, packet_data_in &in) {
 	}
 }
 
-void server_socket::parseInput(client_info &sender, packet_data_in &in) {
-	userinput::command cmd;
-	cmd.cmd = static_cast<userinput::command_type>(readByte(in));
+void server_socket::parseInput(client_info &sender, packet_reader &in) {
+	game::userinput::command cmd;
+	cmd.cmd = static_cast<game::userinput::command_type>(readByte(in));
 
-	if (cmd.cmd == userinput::CMD_NONE) return;
+	if (cmd.cmd == game::userinput::CMD_NONE) return;
 
 	cmd.pos = readBinary<position>(in);
 
@@ -192,10 +192,10 @@ void server_socket::parseInput(client_info &sender, packet_data_in &in) {
 
 
 void server_socket::stateClient(client_info &sender) {
-	packet_data_out packet;
+	packet_writer packet;
 
 	writeByte(packet, PACKET_EDITLOG);
-	wld.logState().write(packet);
+	wld.createStateLogger().write(packet);
 	
 	send(packet.data(), sender.address);
 }
@@ -209,7 +209,7 @@ void server_socket::delClient(client_info &sender) {
 
 	clients_connected.erase(std::remove_if(clients_connected.begin(), clients_connected.end(), [&](auto &c) {
 		if (c.address == sender.address) {
-			socket::log("%s disconnected.\n", ipString(c.address));
+			logger::log(ipString(c.address), " disconnected.");
 			return true;
 		} else {
 			return false;
@@ -224,7 +224,7 @@ void server_socket::testClients() {
 
 	clients_connected.erase(std::remove_if(clients_connected.begin(), clients_connected.end(), [&](auto &c) {
 		if (now - c.last_seen > CLIENT_TIMEOUT) {
-			socket::log("%s timed out.\n", ipString(c.address));
+			logger::log(ipString(c.address), " timed out.");
 			return true;
 		} else {
 			return false;

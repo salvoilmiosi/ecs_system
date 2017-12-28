@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <iostream>
 
-namespace socket {
+namespace net {
 
 bool client_socket::connect(IPaddress addr) {
 	server_addr = addr;
@@ -16,7 +16,7 @@ bool client_socket::connect(IPaddress addr) {
 		return false;
 	}
 
-	packet_data_out connect_packet;
+	packet_writer connect_packet;
 	writeByte(connect_packet, PACKET_USER_CONNECT);
 	send(connect_packet.data());
 
@@ -51,7 +51,7 @@ void client_socket::close(const char *msg) {
 		SDLNet_UDP_Close(sock);
 		sock = nullptr;
 
-		socket::log("%s\n", msg);
+		logger::log(msg);
 	}
 }
 
@@ -67,16 +67,16 @@ void client_socket::disconnect() {
 }
 
 bool client_socket::sendCommand(const std::string &cmd) {
-	packet_data_out out;
+	packet_writer out;
 	writeByte(out, PACKET_USER_COMMAND);
 	writeString(out, cmd);
 	return send(out.data());
 }
 
-bool client_socket::sendInputCommand(const userinput::command &cmd) {
-	if (cmd.cmd == userinput::CMD_NONE) return false;
+bool client_socket::sendInputCommand(const game::userinput::command &cmd) {
+	if (cmd.cmd == game::userinput::CMD_NONE) return false;
 
-	packet_data_out out;
+	packet_writer out;
 	writeByte(out, PACKET_USER_INPUT);
 	writeByte(out, cmd.cmd);
 	writeBinary<position>(out, cmd.pos);
@@ -106,7 +106,7 @@ void client_socket::received() {
 	
 	constexpr size_t HEAD_SIZE = 7;
 
-	packet_data_in in(recv_data);
+	packet_reader in(recv_data);
 
 	recv_packet p;
 	readByte(in); // should be PACKET_SLICED

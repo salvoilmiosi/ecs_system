@@ -7,17 +7,18 @@
 #include <mutex>
 #include <vector>
 
-#include "packet_data.h"
-#include "userinput.h"
-#include "ecs_net.h"
-#include "components_serial.h"
+#include "ecs/world_io.h"
+
+#include "game/userinput.h"
+#include "game/components_serial.h"
+
 #include "socket.h"
 
-namespace socket {
+namespace net {
 
 class server_socket {
 public:
-	server_socket(auto &wld) : wld(wld) {
+	server_socket(ecs::world_io<MyComponents> &wld) : wld(wld) {
 		sock_set = SDLNet_AllocSocketSet(1);
 	}
 
@@ -38,7 +39,7 @@ private:
 	void sendRaw(packet_data packet, IPaddress addr);
 	void sendSliced(const packet_data &packet, IPaddress addr);
 
-	ecs::world_out<MyComponents> &wld;
+	ecs::world_io<MyComponents> &wld;
 
 	UDPsocket sock = nullptr;
 	SDLNet_SocketSet sock_set;
@@ -50,7 +51,7 @@ private:
 	struct client_info {
 		IPaddress address;
 		Uint32 last_seen;
-		userinput::handler input;
+		game::userinput::handler input;
 	};
 
 	std::vector<client_info> clients_connected;
@@ -60,8 +61,8 @@ private:
 
 	void addClient(IPaddress address);
 
-	void parseCommand(client_info &sender, packet_data_in &reader);
-	void parseInput(client_info &sender, packet_data_in &reader);
+	void parseCommand(client_info &sender, packet_reader &reader);
+	void parseInput(client_info &sender, packet_reader &reader);
 
 	void stateClient(client_info &sender);
 	void pingClient(client_info &sender);

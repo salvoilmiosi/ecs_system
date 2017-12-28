@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "ecs.h"
+#include "ecs/world.h"
 
 struct sprite {
 	std::string src;

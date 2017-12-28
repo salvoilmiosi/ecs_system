@@ -3,7 +3,7 @@ export LDFLAGS
 export LIBS
 export BUILD
 
-export MAINS = src/server_main.cpp src/client_main.cpp
+export MAINS = src/main_server.cpp src/main_client.cpp
 export OUT = ecs_system
 
 ifeq ($(OS),Windows_NT)

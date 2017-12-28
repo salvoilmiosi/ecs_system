@@ -10,18 +10,18 @@ typedef std::vector<uint8_t> packet_data;
 
 static const size_t PACKET_SIZE = 1024 * 8;
 
-class packet_data_in {
+class packet_reader {
 public:
-	packet_data_in(const packet_data &data) : data(data) {}
+	packet_reader(const packet_data &data) : datain(data) {}
 
 	const uint8_t *read(size_t len) {
-		const uint8_t *data_ptr = data.data() + index;
+		const uint8_t *data_ptr = datain.data() + index;
 		index += len;
 		return data_ptr;
 	}
 
 	bool eof() {
-		return index >= data.size();
+		return index >= datain.size();
 	}
 
 	size_t at() {
@@ -29,18 +29,18 @@ public:
 	}
 
 private:
-	const packet_data &data;
+	const packet_data &datain;
 
 	size_t index = 0;
 
 	const uint8_t *data_ptr() {
-		return data.data() + index;
+		return datain.data() + index;
 	}
 };
 
-class packet_data_out {
+class packet_writer {
 public:
-	packet_data_out() {
+	packet_writer() {
 		dataout.reserve(PACKET_SIZE);
 	}
 
@@ -58,57 +58,57 @@ private:
 };
 
 // expect linker error if serializer function are undefined
-template<typename T> T readBinary(packet_data_in &in);
+template<typename T> T readBinary(packet_reader &in);
 
-inline uint8_t readByte(packet_data_in &in) {
+inline uint8_t readByte(packet_reader &in) {
 	return *(in.read(sizeof(uint8_t)));
 }
 
-inline std::string readString(packet_data_in &in) {
+inline std::string readString(packet_reader &in) {
 	uint8_t len = readByte(in);
 	const uint8_t *begin = in.read(len);
 	return std::string(begin, begin + len);
 }
 
-inline uint16_t readShort(packet_data_in &in) {
+inline uint16_t readShort(packet_reader &in) {
 	return SDLNet_Read16(in.read(sizeof(uint16_t)));
 }
 
-inline uint32_t readLong(packet_data_in &in) {
+inline uint32_t readLong(packet_reader &in) {
 	return SDLNet_Read32(in.read(sizeof(uint32_t)));
 }
 
-inline uint64_t readLongLong(packet_data_in &in) {
+inline uint64_t readLongLong(packet_reader &in) {
 	uint64_t byte0 = readLong(in);
 	uint64_t byte1 = readLong(in);
 	return byte0 << 32 | byte1;
 }
 
 // expect linker error if serializer function are undefined
-template<typename T> void writeBinary(packet_data_out &out, const T& obj);
+template<typename T> void writeBinary(packet_writer &out, const T& obj);
 
-inline void writeByte(packet_data_out &out, const uint8_t &obj) {
+inline void writeByte(packet_writer &out, const uint8_t &obj) {
 	out.write(&obj, sizeof(uint8_t));
 }
 
-inline void writeString(packet_data_out &out, const std::string &obj) {
+inline void writeString(packet_writer &out, const std::string &obj) {
 	writeByte(out, obj.size());
 	out.write(reinterpret_cast<const uint8_t *>(obj.data()), obj.size());
 }
 
-inline void writeShort(packet_data_out &out, const uint16_t &obj) {
+inline void writeShort(packet_writer &out, const uint16_t &obj) {
 	uint16_t pack;
 	SDLNet_Write16(obj, &pack);
 	out.write(reinterpret_cast<const uint8_t *>(&pack), sizeof(pack));
 }
 
-inline void writeLong(packet_data_out &out, const uint32_t &obj) {
+inline void writeLong(packet_writer &out, const uint32_t &obj) {
 	uint32_t pack;
 	SDLNet_Write32(obj, &pack);
 	out.write(reinterpret_cast<const uint8_t *>(&pack), sizeof(pack));
 }
 
-inline void writeLongLong(packet_data_out &out, const uint64_t &obj) {
+inline void writeLongLong(packet_writer &out, const uint64_t &obj) {
 	writeLong(out, (obj & 0xffffffff00000000) >> 32);
 	writeLong(out, obj & 0x00000000ffffffff);
 }
@@ -173,22 +173,22 @@ static long double unpack754(uint64_t i, unsigned bits, unsigned expbits)
     return result;
 }
 
-inline float readFloat(packet_data_in &in) {
+inline float readFloat(packet_reader &in) {
 	uint32_t i = readLong(in);
 	return unpack754_32(i);
 }
 
-inline double readDouble(packet_data_in &in) {
+inline double readDouble(packet_reader &in) {
 	uint64_t i = readLongLong(in);
 	return unpack754_64(i);
 }
 
-inline void writeFloat(packet_data_out &out, const float &obj) {
+inline void writeFloat(packet_writer &out, const float &obj) {
 	uint32_t i = pack754_32(obj);
 	writeLong(out, i);
 }
 
-inline void writeDouble(packet_data_out &out, const double &obj) {
+inline void writeDouble(packet_writer &out, const double &obj) {
 	uint64_t i = pack754_64(obj);
 	writeLongLong(out, i);
 }

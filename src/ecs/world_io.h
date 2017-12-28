@@ -4,11 +4,11 @@
 #include "world.h"
 
 #include "edit_logger.h"
-#include "packet_data.h"
+#include "ecs/packet_data.h"
 
 namespace ecs {
 
-enum flags_t {
+enum world_flags {
 	none = 0,
 	in = 1 << 0,
 	out = 1 << 1,
@@ -18,7 +18,7 @@ enum flags_t {
 template<typename ComponentList, size_t MaxEntities = MAX_ENTITIES_DEFAULT>
 class world_io : public world<ComponentList, MaxEntities> {
 public:
-	world_io(flags_t flags = flags_t::inout) : flags(flags) {}
+	world_io(world_flags flags = world_flags::inout) : flags(flags) {}
 
 	template<typename T>
 	void addComponent(entity_id ent, T component) {
@@ -64,7 +64,7 @@ private:
 
 	edit_logger<ComponentList> logger;
 
-	const flags_t flags;
+	const world_flags flags;
 
 	typename SUPER::template container<entity_id> remote_ids;
 
@@ -122,18 +122,18 @@ private:
 template<typename ComponentList, size_t MaxEntities = MAX_ENTITIES_DEFAULT>
 class world_in : public world_io<ComponentList, MaxEntities> {
 public:
-	world_in() : world_io<ComponentList, MaxEntities>(flags_t::in) {}
+	world_in() : world_io<ComponentList, MaxEntities>(world_flags::in) {}
 };
 
 template<typename ComponentList, size_t MaxEntities = MAX_ENTITIES_DEFAULT>
 class world_out : public world_io<ComponentList, MaxEntities> {
 public:
-	world_out() : world_io<ComponentList, MaxEntities>(flags_t::out) {}
+	world_out() : world_io<ComponentList, MaxEntities>(world_flags::out) {}
 };
 
 template<typename ComponentList, size_t MaxEntities> template<typename ... Ts>
 void world_io<ComponentList, MaxEntities>::logComponents(entity_id ent, edit_type type) {
-	if (!(flags & flags_t::out)) return;
+	if (!(flags & world_flags::out)) return;
 
 	auto edit = logger.create();
 	edit.type = type;
@@ -145,7 +145,7 @@ void world_io<ComponentList, MaxEntities>::logComponents(entity_id ent, edit_typ
 
 template<typename ComponentList, size_t MaxEntities>
 void world_io<ComponentList, MaxEntities>::logMask(entity_id ent) {
-	if (!(flags & flags_t::out)) return;
+	if (!(flags & world_flags::out)) return;
 
 	auto edit = logger.create();
 	edit.type = EDIT_MASK;
@@ -172,7 +172,7 @@ edit_logger<ComponentList> world_io<ComponentList, MaxEntities>::createStateLogg
 
 template<typename ComponentList, size_t MaxEntities>
 void world_io<ComponentList, MaxEntities>::applyEdits(edit_logger<ComponentList> &logger) {
-	if (!(flags & flags_t::in)) return;
+	if (!(flags & world_flags::in)) return;
 
 	logger.forEachEdit([this](auto &edit) {
 		switch(edit.type) {

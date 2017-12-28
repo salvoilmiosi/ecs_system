@@ -20,9 +20,6 @@ ifdef BUILD
 	OBJ_DIR := $(BUILD)/$(OBJ_DIR)
 endif
 
-$(shell mkdir -p $(BIN_DIR) >/dev/null)
-$(shell mkdir -p $(OBJ_DIR) >/dev/null)
-
 DEPFLAGS = -MT $@ -MMD -MP -MF $(OBJ_DIR)/$*.Td
 
 SOURCES = $(filter-out $(MAINS),$(shell find $(SRC)/ -type f -name '*.cpp'))
@@ -39,12 +36,14 @@ endif
 OBJECTS = $(patsubst $(SRC)/%,$(OBJ_DIR)/%.o,$(basename $(SOURCES)))
 
 $(BIN_DIR)/$(OUT): $(OBJECTS)
+	@mkdir -p $(dir $@)
 	$(LD) -o $(BIN_DIR)/$(OUT) $(OBJECTS) $(LDFLAGS) $(LIBS)
 
 all: $(BIN_DIR)/$(OUT)
 
 $(OBJ_DIR)/%.o : $(SRC)/%.cpp
 $(OBJ_DIR)/%.o : $(SRC)/%.cpp $(OBJ_DIR)/%.d
+	@mkdir -p $(dir $@)
 	$(CXX) $(DEPFLAGS) $(CFLAGS) -c $(addprefix -I,$(INC_DIR)) -o $@ $<
 	@mv -f $(OBJ_DIR)/$*.Td $(OBJ_DIR)/$*.d
 
@@ -54,10 +53,7 @@ $(OBJ_DIR)/%.d: ;
 -include $(patsubst $(SRC)/%,$(OBJ_DIR)/%.d,$(basename $(SOURCES)))
 
 clean:
-	rm -f $(OBJ_DIR)/*.o
-	rm -f $(OBJ_DIR)/*.d
-	rm -f $(BIN_DIR)/$(OUT)
-	rmdir $(OBJ_DIR)
-	rmdir $(BIN_DIR)
+	rm -rf $(OBJ_DIR)
+	rm -rf $(BIN_DIR)
 
 .PHONY: clean

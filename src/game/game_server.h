@@ -15,6 +15,8 @@ public:
 		return sock.open();
 	}
 
+	void start();
+
 	void tick();
 
 	void command(std::string cmd) {

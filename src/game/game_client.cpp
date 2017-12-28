@@ -1,8 +1,10 @@
 #include "game_client.h"
 
-#include "components.h"
-
 namespace game {
+
+void game_client::start() {
+
+}
 
 void game_client::tick() {
 	wld.executeSystem<position, velocity>([&](ecs::entity_id id, position &pos, velocity &vel) {

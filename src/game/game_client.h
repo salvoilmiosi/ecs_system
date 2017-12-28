@@ -13,6 +13,7 @@ class game_client {
 public:
 	game_client(SDL_Renderer* const& renderer) : renderer(renderer) {}
 
+	void start();
 	void tick();
 	void render();
 

@@ -110,6 +110,12 @@ int main (int argc, char** argv) {
 
 	timer fps;
 
+	if(listenserver) {
+		listenserver->start();
+	}
+
+	my_game.start();
+
 	SDL_Event event;
 	while(sock.is_open()) {
 		fps.start();

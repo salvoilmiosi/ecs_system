@@ -43,6 +43,8 @@ int main (int argc, char** argv) {
 
 	timer fps;
 
+	game.start();
+
 	while(game.is_open()) {
 		fps.start();
 

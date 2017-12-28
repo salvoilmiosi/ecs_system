@@ -2,6 +2,10 @@
 
 namespace game {
 
+void game_server::start() {
+	wld.createEntity(position(0.f, 768.f), velocity(3.f, -10.f), acceleration(0.f, 0.1f), health(200), generator());
+}
+
 void game_server::tick() {
 	wld.executeSystem<position, velocity>([&](ecs::entity_id id, position &pos, velocity &vel) {
 		pos.value.x += vel.value.x;

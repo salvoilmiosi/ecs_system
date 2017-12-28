@@ -15,7 +15,9 @@ typedef size_t entity_id;
 template<typename ... Components>
 using component_list = mpl::TypeList<Components...>;
 
-struct tag {}; // Components that derive from struct tag must contain no data. Tags don't need serialization functions.
+struct tag {};
+// Components that derive from struct tag must contain no data. Tags don't need serialization functions.
+// All other components need a write(packet_writer&) and a read(packet_reader&) function
 
 template<typename ComponentList, size_t MaxEntities = MAX_ENTITIES_DEFAULT>
 class world {

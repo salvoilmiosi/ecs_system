@@ -4,6 +4,39 @@
 #include <string>
 
 #include "ecs/world.h"
+#include "ecs/packet_data.h"
+
+struct vector2d {
+	float x;
+	float y;
+};
+
+struct int_component {
+	int value;
+
+	int_component(int value) : value(value) {}
+
+	void read(packet_reader&);
+	void write(packet_writer&) const;
+};
+
+struct float_component {
+	float value;
+
+	float_component(float value) : value(value) {}
+
+	void read(packet_reader&);
+	void write(packet_writer&) const;
+};
+
+struct vec_component {
+	vector2d value;
+
+	vec_component(float x = 0.f, float y = 0.f) : value{x, y} {}
+
+	void read(packet_reader&);
+	void write(packet_writer&) const;
+};
 
 struct sprite {
 	std::string src;
@@ -12,51 +45,33 @@ struct sprite {
 	sprite() {}
 	sprite(std::string src) : src(src) {}
 	sprite(int color) : color(color) {}
+
+	void read(packet_reader&);
+	void write(packet_writer&) const;
 };
 
-struct position {
-	float x = 0.f;
-	float y = 0.f;
-
-	position() {}
-	position(float x, float y) : x(x), y(y) {}
+struct position : vec_component {
+	position(float x = 0.f, float y = 0.f) : vec_component(x, y) {};
 };
 
-struct velocity {
-	float x = 0.f;
-	float y = 0.f;
-
-	velocity() {}
-	velocity(float x, float y) : x(x), y(y) {}
+struct velocity : vec_component {
+	velocity(float x = 0.f, float y = 0.f) : vec_component(x, y) {};
 };
 
-struct acceleration {
-	float x = 0.f;
-	float y = 0.f;
-
-	acceleration() {}
-	acceleration(float x, float y) : x(x), y(y) {}
+struct acceleration : vec_component {
+	acceleration(float x = 0.f, float y = 0.f) : vec_component(x, y) {};
 };
 
-struct scale {
-	float value = 1.f;
-
-	scale() {}
-	scale(float value) : value(value) {}
+struct scale : float_component {
+	scale(float value = 1.f) : float_component(value) {}
 };
 
-struct shrinking {
-	float value = 1.f;
-
-	shrinking() {}
-	shrinking(float value) : value(value) {}
+struct shrinking : float_component {
+	shrinking(float value = 1.f) : float_component(value) {}
 };
 
-struct health {
-	int value = 100;
-
-	health() {}
-	health(int value) : value(value) {}
+struct health : int_component {
+	health(int value = 100) : int_component(value) {}
 };
 
 struct generator : ecs::tag { };

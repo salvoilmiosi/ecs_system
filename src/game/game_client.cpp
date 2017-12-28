@@ -6,12 +6,12 @@ namespace game {
 
 void game_client::tick() {
 	wld.executeSystem<position, velocity>([&](ecs::entity_id id, position &pos, velocity &vel) {
-		pos.x += vel.x;
-		pos.y += vel.y;
+		pos.value.x += vel.value.x;
+		pos.value.y += vel.value.y;
 	});
 	wld.executeSystem<velocity, acceleration>([&](ecs::entity_id id, velocity &vel, acceleration &acc) {
-		vel.x += acc.x;
-		vel.y += acc.y;
+		vel.value.x += acc.value.x;
+		vel.value.y += acc.value.y;
 	});
 	wld.executeSystem<scale, shrinking>([&](ecs::entity_id id, scale &sca, shrinking &shr) {
 		sca.value *= shr.value;
@@ -47,8 +47,8 @@ void game_client::generateParticles(ecs::entity_id, position &pos, generator &ge
 		sprite sprite_random((r << (8 * 3)) | (g << (8 * 2)) | (b << (8 * 1)) | (a << (8 * 0)));
 		
 		position position_random(
-			pos.x + ((float) rand() / RAND_MAX - 0.5f) * 100.f,
-			pos.y + ((float) rand() / RAND_MAX - 0.5f) * 100.f);
+			pos.value.x + ((float) rand() / RAND_MAX - 0.5f) * 100.f,
+			pos.value.y + ((float) rand() / RAND_MAX - 0.5f) * 100.f);
 
 		velocity velocity_random(
 			((float) rand() / RAND_MAX - 0.5f) * 8.f,
@@ -70,7 +70,7 @@ void game_client::generateParticles(ecs::entity_id, position &pos, generator &ge
 }
 
 void game_client::renderEntity(ecs::entity_id, sprite &spr, position &pos, scale &s) {
-	SDL_Rect rect {(int)(pos.x - s.value * 0.5f), (int)(pos.y - s.value * 0.5f), (int)s.value, (int)s.value};
+	SDL_Rect rect {(int)(pos.value.x - s.value * 0.5f), (int)(pos.value.y - s.value * 0.5f), (int)s.value, (int)s.value};
 	Uint8 r = (spr.color & 0xff000000) >> (8 * 3);
 	Uint8 g = (spr.color & 0x00ff0000) >> (8 * 2);
 	Uint8 b = (spr.color & 0x0000ff00) >> (8 * 1);

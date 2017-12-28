@@ -182,7 +182,7 @@ void server_socket::parseInput(client_info &sender, packet_reader &in) {
 
 	if (cmd.cmd == game::userinput::CMD_NONE) return;
 
-	cmd.pos = readBinary<position>(in);
+	cmd.pos.read(in);
 
 	sender.input.handleCommand(wld, cmd);
 }

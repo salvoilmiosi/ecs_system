@@ -57,10 +57,6 @@ private:
 	packet_data dataout;
 };
 
-// expect linker error if serializer functions are undefined
-template<typename T> T readBinary(packet_reader &in);
-template<typename T> void writeBinary(packet_writer &out, const T& obj);
-
 uint8_t readByte(packet_reader &in);
 void writeByte(packet_writer &out, const uint8_t &obj);
 

@@ -26,9 +26,6 @@ uint64_t readLongLong(packet_reader &in) {
 	return byte0 << 32 | byte1;
 }
 
-// expect linker error if serializer function are undefined
-template<typename T> void writeBinary(packet_writer &out, const T& obj);
-
 void writeByte(packet_writer &out, const uint8_t &obj) {
 	out.write(&obj, sizeof(uint8_t));
 }

@@ -79,7 +79,7 @@ bool client_socket::sendInputCommand(const game::userinput::command &cmd) {
 	packet_writer out;
 	writeByte(out, PACKET_USER_INPUT);
 	writeByte(out, cmd.cmd);
-	writeBinary<position>(out, cmd.pos);
+	cmd.pos.write(out);
 	return send(out.data());
 }
 

@@ -4,12 +4,12 @@ namespace game {
 
 void game_server::tick() {
 	wld.executeSystem<position, velocity>([&](ecs::entity_id id, position &pos, velocity &vel) {
-		pos.x += vel.x;
-		pos.y += vel.y;
+		pos.value.x += vel.value.x;
+		pos.value.y += vel.value.y;
 	});
 	wld.executeSystem<velocity, acceleration>([&](ecs::entity_id id, velocity &vel, acceleration &acc) {
-		vel.x += acc.x;
-		vel.y += acc.y;
+		vel.value.x += acc.value.x;
+		vel.value.y += acc.value.y;
 	});
 	wld.executeSystem<scale, shrinking>([&](ecs::entity_id id, scale &sca, shrinking &shr) {
 		sca.value *= shr.value;

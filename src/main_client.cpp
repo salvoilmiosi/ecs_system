@@ -53,10 +53,11 @@ void readPackets() {
 			input_logger.read(in);
 			break;
 		case net::PACKET_SERVER_MSG:
-			console::log("Server: ", readString(in));
+			console::addLine("Server: ", readString(in));
 			break;
 		case net::PACKET_SERVER_QUIT:
-			sock.close("Server has quit");
+			console::addLine("Server has quit");
+			sock.close();
 			break;
 		case net::PACKET_NONE:
 		default:
@@ -67,14 +68,6 @@ void readPackets() {
 	my_game.applyEdits(input_logger);
 }
 
-}
-
-namespace console {
-	std::stringstream console_io;
-
-	logger log;//(console_io);
-
-	void render(SDL_Renderer *renderer) {}
 }
 
 int main (int argc, char** argv) {
@@ -133,7 +126,6 @@ int main (int argc, char** argv) {
 		my_game.tick();
 
 		my_game.render(renderer);
-		console::render(renderer);
 
 		SDL_RenderPresent(renderer);
 
@@ -161,6 +153,8 @@ int main (int argc, char** argv) {
 			SDL_Delay(1000 / net::TICKRATE - fps.get_ticks());
 		}
 	}
+
+	console::addLine("Disconnected.");
 
 	if(listenserver) {
 		listenserver->command("quit");

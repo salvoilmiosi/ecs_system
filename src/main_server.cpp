@@ -5,10 +5,6 @@
 
 #include "timer.h"
 
-namespace console {
-	logger log;
-}
-
 struct thread_wrapper {
 	std::thread thread;
 

@@ -13,7 +13,7 @@ bool server_socket::open(uint16_t port) {
 		return false;
 	}
 
-	console::log("Server open on port ", port);
+	std::cout << "Server open on port " << port << std::endl;
 
 	SDLNet_UDP_AddSocket(sock_set, sock);
 
@@ -61,6 +61,8 @@ void server_socket::sendServerMsg(const std::string &msg) {
 	writeByte(out, PACKET_SERVER_MSG);
 	writeString(out, msg);
 	sendAll(out.data());
+
+	std::cout << msg << std::endl;
 }
 
 void server_socket::sendRaw(packet_data data, IPaddress addr) {

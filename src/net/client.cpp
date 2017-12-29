@@ -34,7 +34,8 @@ bool client_socket::connect(IPaddress addr) {
 						received();
 					}
 				} else {
-					close("Server timed out");
+					// Server timed out -- localhost only
+					close();
 					break;
 				}
 			}
@@ -43,15 +44,13 @@ bool client_socket::connect(IPaddress addr) {
 	return true;
 }
 
-void client_socket::close(const char *msg) {
+void client_socket::close() {
 	std::lock_guard lock(s_mutex);
 
 	if (is_open()) {
 		SDLNet_UDP_DelSocket(sock_set, sock);
 		SDLNet_UDP_Close(sock);
 		sock = nullptr;
-
-		console::log(msg);
 	}
 }
 
@@ -59,7 +58,7 @@ void client_socket::disconnect() {
 	if (is_open()) {
 		sendCommand("disconnect");
 
-		close("Disconnected");
+		close();
 	}
 	if (client_thread.joinable()) {
 		client_thread.join();

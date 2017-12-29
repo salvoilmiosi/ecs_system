@@ -35,7 +35,7 @@ public:
 
 	bool connect(IPaddress addr);
 
-	void close(const char *msg);
+	void close();
 	void disconnect();
 
 	bool is_open() {

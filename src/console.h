@@ -1,7 +1,6 @@
 #ifndef __LOGGER_H__
 #define __LOGGER_H__
 
-#include <mutex>
 #include <iostream>
 #include <sstream>
 
@@ -14,24 +13,10 @@ std::string format(Ts&& ... args) {
 	return str.str();
 }
 
-class logger {
-public:
-	logger(std::ostream &out = std::cout) : out(out) {}
-
-	template<typename ... Ts>
-	void operator() (Ts&& ... args) {
-		std::lock_guard lock(log_mutex);
-
-		(out << ... << args) << std::endl;
-	}
-
-private:
-	std::ostream &out;
-
-	std::mutex log_mutex;
-};
-
-extern logger log;
+template<typename ... Ts>
+void addLine(Ts&& ... args) {
+	std::cout << format(args...) << std::endl;
+}
 
 }
 

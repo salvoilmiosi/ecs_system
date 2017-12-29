@@ -51,7 +51,7 @@ void client_socket::close(const char *msg) {
 		SDLNet_UDP_Close(sock);
 		sock = nullptr;
 
-		logger::log(msg);
+		console::log(msg);
 	}
 }
 

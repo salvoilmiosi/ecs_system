@@ -19,9 +19,11 @@ public:
 
 	void tick();
 
+	void broadcast();
+
 	void command(std::string cmd) {
 		if (cmd == "quit") {
-			sock.sendServerMsg("quit");
+			sock.close();
 			quit = true;
 		}
 	}

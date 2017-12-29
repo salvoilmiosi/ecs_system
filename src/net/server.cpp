@@ -13,7 +13,7 @@ bool server_socket::open(uint16_t port) {
 		return false;
 	}
 
-	logger::log("Server open on port ", port);
+	console::log("Server open on port ", port);
 
 	SDLNet_UDP_AddSocket(sock_set, sock);
 
@@ -43,6 +43,10 @@ bool server_socket::open(uint16_t port) {
 
 void server_socket::close() {
 	if (sock) {
+		packet_writer out;
+		writeByte(out, PACKET_SERVER_QUIT);
+		sendAll(out.data());
+
 		SDLNet_UDP_DelSocket(sock_set, sock);
 		SDLNet_UDP_Close(sock);
 		sock = nullptr;
@@ -54,7 +58,7 @@ void server_socket::close() {
 
 void server_socket::sendServerMsg(const std::string &msg) {
 	packet_writer out;
-	writeByte(out, PACKET_SERVERMSG);
+	writeByte(out, PACKET_SERVER_MSG);
 	writeString(out, msg);
 	sendAll(out.data());
 }
@@ -112,7 +116,7 @@ void server_socket::send(const packet_data &data, IPaddress addr) {
 }
 
 void server_socket::sendAll(const packet_data &data) {
-	std::lock_guard lock(c_mutex);
+	std::shared_lock lock(c_mutex);
 
 	for (auto &c : clients_connected) {
 		send(data, c.address);
@@ -125,11 +129,11 @@ void server_socket::received(UDPpacket &packet) {
 
 	packet_type type = static_cast<packet_type>(readByte(reader));
 
-	c_mutex.lock();
+	c_mutex.lock_shared();
 	auto sender = std::find_if(clients_connected.begin(), clients_connected.end(), [&](auto &c) {
 		return c.address == packet.address;
 	});
-	c_mutex.unlock();
+	c_mutex.unlock_shared();
 
 	if (type == PACKET_USER_CONNECT) {
 		if (sender != clients_connected.end()) return;
@@ -153,14 +157,16 @@ void server_socket::received(UDPpacket &packet) {
 }
 
 void server_socket::addClient(IPaddress address) {
-	std::lock_guard lock(c_mutex);
+	std::unique_lock lock(c_mutex);
 	
 	client_info sender;
 	sender.address = address;
 	sender.last_seen = SDL_GetTicks();
 
 	clients_connected.push_back(sender);
-	logger::log(ipString(address), " connected.");
+
+	lock.unlock();
+	sendServerMsg(console::format(ipString(address), " connected."));
 
 	stateClient(sender);
 }
@@ -202,11 +208,12 @@ void server_socket::pingClient(client_info &sender) {
 }
 
 void server_socket::delClient(client_info &sender) {
-	std::lock_guard lock(c_mutex);
+	std::unique_lock lock(c_mutex);
 
 	clients_connected.erase(std::remove_if(clients_connected.begin(), clients_connected.end(), [&](auto &c) {
 		if (c.address == sender.address) {
-			logger::log(ipString(c.address), " disconnected.");
+			lock.unlock();
+			sendServerMsg(console::format(ipString(c.address), " disconnected."));
 			return true;
 		} else {
 			return false;
@@ -215,13 +222,14 @@ void server_socket::delClient(client_info &sender) {
 }
 
 void server_socket::testClients() {
-	std::lock_guard lock(c_mutex);
+	std::unique_lock lock(c_mutex);
 
 	Uint32 now = SDL_GetTicks();
 
 	clients_connected.erase(std::remove_if(clients_connected.begin(), clients_connected.end(), [&](auto &c) {
 		if (now - c.last_seen > CLIENT_TIMEOUT) {
-			logger::log(ipString(c.address), " timed out.");
+			lock.unlock();
+			sendServerMsg(console::format(ipString(c.address), " timed out."));
 			return true;
 		} else {
 			return false;

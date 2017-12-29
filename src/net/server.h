@@ -4,7 +4,7 @@
 #include <SDL2/SDL_net.h>
 
 #include <thread>
-#include <mutex>
+#include <shared_mutex>
 #include <vector>
 
 #include "ecs/world_io.h"
@@ -54,7 +54,7 @@ private:
 	};
 
 	std::vector<client_info> clients_connected;
-	std::mutex c_mutex;
+	std::shared_mutex c_mutex;
 	
 	void received(UDPpacket &packet);
 

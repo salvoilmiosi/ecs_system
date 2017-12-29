@@ -11,11 +11,10 @@ namespace game {
 
 class game_client {
 public:
-	game_client(SDL_Renderer* const& renderer) : renderer(renderer) {}
-
 	void start();
 	void tick();
-	void render();
+
+	void render(SDL_Renderer *renderer);
 
 	void applyEdits(auto &edits) {
 		wld.applyEdits(edits);
@@ -24,11 +23,9 @@ public:
 private:
 	ecs::world_in<MyComponents> wld;
 
-	SDL_Renderer* const& renderer;
-
 	void generateParticles(ecs::entity_id, position &pos, generator &gen);
 
-	void renderEntity(ecs::entity_id, sprite &spr, position &pos, scale &s);
+	void renderEntity(SDL_Renderer *renderer, sprite &spr, position &pos, scale &s);
 };
 
 }

@@ -26,7 +26,9 @@ void game_server::tick() {
 	});
 
 	wld.updateEntities();
+}
 
+void game_server::broadcast() {
 	packet_writer packet;
 	writeByte(packet, net::PACKET_EDITLOG);
 	wld.flushLog(packet);

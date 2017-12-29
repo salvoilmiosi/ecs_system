@@ -32,12 +32,10 @@ void game_client::tick() {
 	wld.updateEntities();
 }
 
-void game_client::render() {
+void game_client::render(SDL_Renderer *renderer) {
 	wld.executeSystem<sprite, position, scale>([&](ecs::entity_id id, sprite &spr, position &pos, scale &sca) {
-		renderEntity(id, spr, pos, sca);
+		renderEntity(renderer, spr, pos, sca);
 	});
-
-	SDL_RenderPresent(renderer);
 }
 
 void game_client::generateParticles(ecs::entity_id, position &pos, generator &gen) {
@@ -71,7 +69,7 @@ void game_client::generateParticles(ecs::entity_id, position &pos, generator &ge
 	}
 }
 
-void game_client::renderEntity(ecs::entity_id, sprite &spr, position &pos, scale &s) {
+void game_client::renderEntity(SDL_Renderer *renderer, sprite &spr, position &pos, scale &s) {
 	SDL_Rect rect {(int)(pos.value.x - s.value * 0.5f), (int)(pos.value.y - s.value * 0.5f), (int)s.value, (int)s.value};
 	Uint8 r = (spr.color & 0xff000000) >> (8 * 3);
 	Uint8 g = (spr.color & 0x00ff0000) >> (8 * 2);

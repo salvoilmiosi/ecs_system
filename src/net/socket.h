@@ -6,7 +6,7 @@
 #include <mutex>
 #include <iostream>
 
-#include "logger.h"
+#include "console.h"
 
 namespace net {
 
@@ -22,7 +22,8 @@ enum packet_type {
 	PACKET_SLICED,
 	
 	PACKET_EDITLOG,
-	PACKET_SERVERMSG,
+	PACKET_SERVER_MSG,
+	PACKET_SERVER_QUIT,
 
 	PACKET_USER_CONNECT,
 	PACKET_USER_COMMAND,

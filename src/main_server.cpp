@@ -5,6 +5,10 @@
 
 #include "timer.h"
 
+namespace console {
+	logger log;
+}
+
 struct thread_wrapper {
 	std::thread thread;
 
@@ -49,6 +53,8 @@ int main (int argc, char** argv) {
 		fps.start();
 
 		game.tick();
+
+		game.broadcast();
 
 		if (fps.get_ticks() < 1000 / net::TICKRATE) {
 			SDL_Delay(1000 / net::TICKRATE - fps.get_ticks());

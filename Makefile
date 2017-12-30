@@ -10,17 +10,12 @@ INC_DIR = include $(SRC)
 BIN_DIR = bin
 OBJ_DIR = obj
 MAINS = server client
+BUILDS = debug release
 OUT = ecs_system
 
 ifdef BUILD
 	BIN_DIR := $(BUILD)/$(BIN_DIR)
 	OBJ_DIR := $(BUILD)/$(OBJ_DIR)
-endif
-
-ifeq ($(OS),Windows_NT)
-	MAKE := mingw32-make
-	LIBS := -lmingw32 -lSDL2main -lSDL2 -lSDL2_net -pthread
-	BIN_EXT := .exe
 endif
 
 ifeq ($(BUILD),release)
@@ -30,9 +25,25 @@ else
 	CFLAGS += -g
 endif
 
+ifeq ($(TARGET),win32)
+	CXX := i686-w64-mingw32-g++
+	LD := i686-w64-mingw32-g++
+endif
+
+ifeq ($(TARGET),win64)
+	CXX := x86_64-w64-mingw32-g++
+	LD := x86_64-w64-mingw32-g++
+endif
+
+ifeq ($(OS),Windows_NT)
+	MAKE := mingw32-make
+	LIBS := -lmingw32 -lSDL2main -lSDL2 -lSDL2_net -pthread
+	BIN_EXT := .exe
+endif
+
 all: $(MAINS)
 
-debug release:
+$(BUILDS):
 	$(MAKE) "BUILD=$@"
 
 DEPFLAGS = -MT $@ -MMD -MP -MF $(OBJ_DIR)/$*.Td
@@ -53,6 +64,10 @@ $(BIN_DIR)/$(OUT)_%$(BIN_EXT): $(OBJECTS_NOMAINS) $(OBJ_DIR)/main_%.o
 	@mkdir -p $(dir $@)
 	$(LD) -o $@ $^ $(LDFLAGS) $(LIBS)
 
+release/bin/$(OUT)_client.exe: $(OBJECTS_NOMAINS) $(OBJ_DIR)/main_client.o
+	@mkdir -p $(dir $@)
+	$(LD) -o $@ $^ -mwindows $(LDFLAGS) $(LIBS)
+
 $(OBJ_DIR)/%.o: $(SRC)/%.cpp $(OBJ_DIR)/%.d
 	@mkdir -p $(dir $@)
 	$(CXX) -c -o $@ $(DEPFLAGS) $(CFLAGS) $(addprefix -I,$(INC_DIR)) $<
@@ -69,4 +84,4 @@ clean:
 	rm -f $(DEPS)
 	rm -f $(BINARIES)
 
-.PHONY: $(MAINS) debug release clean
+.PHONY: $(MAINS) $(BUILDS) clean

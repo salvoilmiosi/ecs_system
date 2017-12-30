@@ -48,7 +48,7 @@ bool client_socket::connect(IPaddress addr) {
 
 void client_socket::close() {
 	if (is_open()) {
-		sendCommand("disconnect");
+		sendCommand("disconnect \"Disconnect by user\"");
 
 		SDLNet_UDP_DelSocket(sock_set, sock);
 		SDLNet_UDP_Close(sock);

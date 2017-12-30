@@ -6,6 +6,7 @@
 #include <thread>
 #include <shared_mutex>
 #include <vector>
+#include <string_view>
 
 #include "ecs/world_io.h"
 
@@ -67,9 +68,9 @@ private:
 	void parseCommand(client_info &sender, packet_reader &reader);
 	void parseInput(client_info &sender, packet_reader &reader);
 
-	void stateClient(client_info &sender);
-	void pingClient(client_info &sender);
-	void delClient(client_info &sender);
+	void clientState(client_info &sender, std::string_view args);
+	void clientPing(client_info &sender, std::string_view args);
+	void clientDisconnect(client_info &sender, std::string_view args);
 
 	void testClients();
 };

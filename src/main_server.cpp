@@ -1,6 +1,3 @@
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_net.h>
-
 #include "game/game_server.h"
 
 #include "timer.h"
@@ -45,7 +42,7 @@ int main (int argc, char** argv) {
 
 	server.start();
 
-	while(server.is_open()) {
+	while (server.is_open()) {
 		fps.start();
 
 		server.tick();

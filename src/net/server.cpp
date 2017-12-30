@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <algorithm>
+#include <map>
 
 namespace net {
 
@@ -170,17 +171,22 @@ void server_socket::addClient(IPaddress address) {
 	lock.unlock();
 	sendServerMsg(console::format(ipString(address), " connected."));
 
-	stateClient(sender);
+	clientState(sender, "");
 }
 
 void server_socket::parseCommand(client_info &sender, packet_reader &in) {
+	typedef void (server_socket::*cmd_func)(client_info&, std::string_view args);
+	static std::map<std::string, cmd_func, std::less<>> commands = {
+		{"state", clientState},
+		{"ping", clientPing},
+		{"disconnect", clientDisconnect}
+	};
+
 	std::string cmd = readString(in);
-	if (cmd == "state") {
-		stateClient(sender);
-	} else if (cmd == "ping") {
-		pingClient(sender);
-	} else if (cmd == "disconnect") {
-		delClient(sender);
+
+	auto it = commands.find(console::getCommand(cmd));
+	if (it != commands.end()) {
+		(this->*it->second)(sender, cmd);
 	}
 }
 
@@ -196,7 +202,7 @@ void server_socket::parseInput(client_info &sender, packet_reader &in) {
 }
 
 
-void server_socket::stateClient(client_info &sender) {
+void server_socket::clientState(client_info &sender, std::string_view args) {
 	packet_writer packet;
 
 	writeByte(packet, PACKET_EDITLOG);
@@ -205,17 +211,17 @@ void server_socket::stateClient(client_info &sender) {
 	send(packet.data(), sender.address);
 }
 
-void server_socket::pingClient(client_info &sender) {
+void server_socket::clientPing(client_info &sender, std::string_view args) {
 	sender.last_seen = SDL_GetTicks();
 }
 
-void server_socket::delClient(client_info &sender) {
+void server_socket::clientDisconnect(client_info &sender, std::string_view args) {
 	std::unique_lock lock(c_mutex);
 
 	clients_connected.erase(std::remove_if(clients_connected.begin(), clients_connected.end(), [&](auto &c) {
 		if (c.address == sender.address) {
 			lock.unlock();
-			sendServerMsg(console::format(ipString(c.address), " disconnected."));
+			sendServerMsg(console::format(ipString(c.address), " disconnected (", console::getArgument(args, 1), ")"));
 			return true;
 		} else {
 			return false;

@@ -72,13 +72,15 @@ private:
 
 	void logMask(entity_id ent);
 
+	using ComponentsNoTags = typename SUPER::ComponentsNoTags;
+
 	template<size_t ... Is>
 	constexpr auto singleEntityComponents(entity_id ent, std::index_sequence<Is ...>) {
 		return std::make_tuple(std::get<Is>(this->component_data)[ent] ...);
 	}
 
 	constexpr auto singleEntityComponents(entity_id ent) {
-		return singleEntityComponents(ent, std::make_index_sequence<ComponentList::size>());
+		return singleEntityComponents(ent, std::make_index_sequence<ComponentsNoTags::size>());
 	}
 
 	entity_id remoteEntity(entity_id id) {
@@ -109,6 +111,7 @@ private:
 	}
 
 	void editHelper(auto &edit) {
+		SUPER::entity_list[remoteEntity(edit.id)].mask |= edit.mask;
 		mpl::for_each_in_tuple(edit.data, [&](auto &comp) {
 			component_mask c_mask = SUPER::template generateMask<typename std::remove_reference<decltype(comp)>::type> ();
 			if ((edit.mask & c_mask) == c_mask) {

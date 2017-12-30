@@ -29,7 +29,9 @@ public:
 	template<typename ... Ts>
 	using component_tuple = std::tuple<Ts...>;
 
-	typedef mpl::Rename<component_tuple, ComponentList> edit_data;
+	using ComponentsNotTags = stripTags<ComponentList>;
+
+	typedef mpl::Rename<component_tuple, ComponentsNotTags> edit_data;
 
 	struct entity_edit {
 		edit_type type;
@@ -78,11 +80,10 @@ void edit_logger<ComponentList>::read(packet_reader &in) {
 		if (edit.type != EDIT_MASK) {
 			mpl::for_each_in_tuple(edit.data, [&](auto &comp) {
 				using component_type = typename std::remove_reference<decltype(comp)>::type;
-				if constexpr (! std::is_base_of<tag, component_type>::value) {
-					auto c_mask = world<ComponentList>::template generateMask<component_type> ();
-					if ((edit.mask & c_mask) == c_mask) {
-						comp.read(in);
-					}
+				static_assert(!std::is_base_of<ecs::tag, component_type>::value);
+				auto c_mask = world<ComponentList>::template generateMask<component_type> ();
+				if ((edit.mask & c_mask) == c_mask) {
+					comp.read(in);
 				}
 			});
 		}
@@ -105,11 +106,10 @@ void edit_logger<ComponentList>::write(packet_writer &out) {
 
 		mpl::for_each_in_tuple(edit.data, [&](auto &comp) {
 			using component_type = typename std::remove_reference<decltype(comp)>::type;
-			if constexpr (! std::is_base_of<tag, component_type>::value) {
-				auto c_mask = world<ComponentList>::template generateMask<component_type>();
-				if ((edit.mask & c_mask) == c_mask) {
-					comp.write(out);
-				}
+			static_assert(!std::is_base_of<ecs::tag, component_type>::value);
+			auto c_mask = world<ComponentList>::template generateMask<component_type>();
+			if ((edit.mask & c_mask) == c_mask) {
+				comp.write(out);
 			}
 		});
 	});

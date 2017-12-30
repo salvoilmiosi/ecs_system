@@ -23,8 +23,7 @@ public:
 
 	void command(std::string cmd) {
 		if (cmd == "quit") {
-			sock.close();
-			quit = true;
+			close();
 		}
 	}
 

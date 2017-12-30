@@ -23,7 +23,7 @@ public:
 private:
 	ecs::world_in<MyComponents> wld;
 
-	void generateParticles(ecs::entity_id, position &pos, generator &gen);
+	void generateParticles(ecs::entity_id, position &pos);
 
 	void renderEntity(SDL_Renderer *renderer, sprite &spr, position &pos, scale &s);
 };

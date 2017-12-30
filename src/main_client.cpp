@@ -157,7 +157,7 @@ int main (int argc, char** argv) {
 	console::addLine("Disconnected.");
 
 	if(listenserver) {
-		listenserver->command("quit");
+		listenserver->close();
 	}
 
 	cleanUp();

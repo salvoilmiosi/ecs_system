@@ -25,8 +25,8 @@ void game_client::tick() {
 		}
 	});
 
-	wld.executeSystem<position, generator>([&](ecs::entity_id id, position &pos, generator &gen) {
-		generateParticles(id, pos, gen);
+	wld.executeSystem<position, generator>([&](ecs::entity_id id, position &pos) {
+		generateParticles(id, pos);
 	});
 
 	wld.updateEntities();
@@ -38,7 +38,7 @@ void game_client::render(SDL_Renderer *renderer) {
 	});
 }
 
-void game_client::generateParticles(ecs::entity_id, position &pos, generator &gen) {
+void game_client::generateParticles(ecs::entity_id, position &pos) {
 	for (int i=0; i<5; ++i) {
 		Uint8 r = rand() % 0xff;
 		Uint8 g = rand() % 0xff;

@@ -19,6 +19,24 @@ struct tag {};
 // Components that derive from struct tag must contain no data. Tags don't need serialization functions.
 // All other components need a write(packet_writer&) and a read(packet_reader&) function
 
+template<typename T>
+struct stripTagsHelper;
+
+template<>
+struct stripTagsHelper<mpl::TypeList<>> {
+	using type = mpl::TypeList<>;
+};
+
+template<typename T, typename ... Ts>
+struct stripTagsHelper<mpl::TypeList<T, Ts ...>> {
+	using recursive = typename stripTagsHelper<mpl::TypeList<Ts...>>::type;
+	using type = typename std::conditional<std::is_base_of<tag, T>::value,
+		recursive, mpl::addToList<T, recursive>>::type;
+};
+
+template<typename T>
+using stripTags = typename stripTagsHelper<T>::type;
+
 template<typename ComponentList, size_t MaxEntities = MAX_ENTITIES_DEFAULT>
 class world {
 	static_assert(mpl::allHaveDefaultConstructor<ComponentList>{});
@@ -30,7 +48,8 @@ protected:
 	template<typename ... Ts>
 	using components_tuple = std::tuple<container<Ts>...>;
 
-	mpl::Rename<components_tuple, ComponentList> component_data;
+	using ComponentsNoTags = stripTags<ComponentList>;
+	mpl::Rename<components_tuple, ComponentsNoTags> component_data;
 
 	typedef std::bitset<ComponentList::size> component_mask;
 	struct entity {
@@ -56,6 +75,11 @@ protected:
 		return mpl::ContainsAll<mpl::TypeList<Ts...>, ComponentList>{};
 	}
 
+	template<typename T>
+	static constexpr bool isTag() {
+		return std::is_base_of<tag, T>::value;
+	}
+
 private:
 	void growContainers();
 
@@ -77,13 +101,16 @@ public:
 	template<typename T>
 	constexpr T &getComponent(entity_id ent) {
 		static_assert(isComponent<T>());
+		static_assert(!isTag<T>());
 		return std::get<container<T>>(component_data)[ent];
 	}
 
 	template<typename T>
 	void addComponent(entity_id ent, T component) {
 		static_assert(isComponent<T>());
-		getComponent<T>(ent) = component;
+		if constexpr (! isTag<T>()) {
+			getComponent<T>(ent) = component;
+		}
 		entity_list[ent].mask |= generateMask<T>();
 	}
 
@@ -130,15 +157,30 @@ public:
 
 	void updateEntities();
 
+	// func must be of type (entity_id, Components...)
+	// Tags are stripped away from Ts into Components
 	template<typename ... Ts>
 	void executeSystem(auto &&func) {
 		static component_mask mask = generateMask<Ts...>();
+		using notTags = stripTags<mpl::TypeList<Ts...>>;
+		static callSystemFunc<notTags> caller;
 		forEachEntity([&](entity_id ent) {
 			if (entityMatches(ent, mask)) {
-				func(ent, getComponent<Ts>(ent) ...);
+				caller(*this, ent, func);
 			}
 		});
 	}
+
+private:
+	template<typename T>
+	struct callSystemFunc;
+
+	template<typename ... Ts>
+	struct callSystemFunc<mpl::TypeList<Ts ...>> {
+		void operator()(auto &wld, entity_id ent, auto &&func) {
+			func(ent, wld.template getComponent<Ts>(ent) ...);
+		}
+	};
 };
 
 template<typename ComponentList, size_t MaxEntities>

@@ -114,6 +114,17 @@ inline void for_each_in_tuple(std::tuple<Ts...> &tuple, F func) {
 	for_each_in_tuple(tuple, func, std::make_index_sequence<sizeof...(Ts)>());
 }
 
+template<typename T, typename L>
+struct addToListHelper;
+
+template<typename T, typename ... Ts>
+struct addToListHelper<T, TypeList<Ts...>> {
+	using type = TypeList<T, Ts...>;
+};
+
+template<typename T, typename L>
+using addToList = typename addToListHelper<T, L>::type;
+
 }
 
 #endif // __MPL_H__

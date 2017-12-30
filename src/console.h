@@ -15,7 +15,7 @@ std::string format(Ts&& ... args) {
 
 template<typename ... Ts>
 void addLine(Ts&& ... args) {
-	std::cout << format(args...) << std::endl;
+	(std::cout << ... << args) << std::endl;
 }
 
 }

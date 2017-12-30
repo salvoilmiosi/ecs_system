@@ -27,37 +27,37 @@ int main (int argc, char** argv) {
 	if (SDLNet_Init() == -1)
 		return 2;
 
-	game::game_server game;
+	game::game_server server;
 
-	if (!game.open())
+	if (!server.open())
 		return 3;
 
 	thread_wrapper cmdline_thread([&]() {
 		std::string line;
-		while (game.is_open()) {
+		while (server.is_open()) {
 			std::getline(std::cin, line);
 
-			game.command(line);
+			server.command(line);
 		}
 	});
 
 	timer fps;
 
-	game.start();
+	server.start();
 
-	while(game.is_open()) {
+	while(server.is_open()) {
 		fps.start();
 
-		game.tick();
+		server.tick();
 
-		game.broadcast();
+		server.broadcast();
 
 		if (fps.get_ticks() < 1000 / net::TICKRATE) {
 			SDL_Delay(1000 / net::TICKRATE - fps.get_ticks());
 		}
 	}
 
-	game.close();
+	server.close();
 
 	SDLNet_Quit();
 	SDL_Quit();

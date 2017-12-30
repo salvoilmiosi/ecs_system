@@ -4,6 +4,9 @@
 #include <iostream>
 #include <sstream>
 
+static const int SCREEN_W = 1024;
+static const int SCREEN_H = 768;
+
 namespace console {
 
 template<typename ... Ts>

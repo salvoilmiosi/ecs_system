@@ -1,7 +1,3 @@
-#include <memory>
-#include <string>
-#include <sstream>
-
 #include "game/game_client.h"
 #include "game/game_server.h"
 
@@ -9,12 +5,12 @@
 
 namespace {
 
-constexpr int SCREEN_W = 1024;
-constexpr int SCREEN_H = 768;
+const char *TITLE_SERVER = "Sistema ECS - Server";
+const char *TITLE_CLIENT = "Sistema ECS - Client";
 
 SDL_Renderer *renderer;
 
-bool initSDL(const char *title) {
+bool createWindow(const char *title) {
 	SDL_Window *window = SDL_CreateWindow(title,
 		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
 		SCREEN_W, SCREEN_H, SDL_WINDOW_SHOWN);
@@ -30,12 +26,6 @@ bool initSDL(const char *title) {
 	return true;
 }
 
-void cleanUp() {
-	SDL_DestroyRenderer(renderer);
-	SDLNet_Quit();
-	SDL_Quit();
-}
-
 }
 
 int main (int argc, char** argv) {
@@ -45,13 +35,17 @@ int main (int argc, char** argv) {
 	if (SDLNet_Init() == -1)
 		return 1;
 
-	game::game_server listenserver;
+	game::game_server server;
+	game::game_client client;
+
+	bool listenserver = false;
 
 	if (argc == 1) {
-		listenserver.open();
+		listenserver = true;
+		server.open();
 	}
 
-	const char *addr_str = (!listenserver.is_open() && argc > 1) ? argv[1] : "localhost";
+	const char *addr_str = (!listenserver && argc > 1) ? argv[1] : "localhost";
 
 	IPaddress addr;
 	if (SDLNet_ResolveHost(&addr, addr_str, net::PORT)) {
@@ -59,20 +53,18 @@ int main (int argc, char** argv) {
 		return 2;
 	}
 
-	game::game_client client;
-
 	if (! client.connect(addr)) {
 		return 3;
 	}
 	
-	if (! initSDL(listenserver.is_open() ? "Sistema ECS - Server" : "Sistema ECS - Client")) {
+	if (! createWindow(listenserver ? TITLE_SERVER : TITLE_CLIENT)) {
 		return 4;
 	}
 
 	timer fps;
 
-	if (listenserver.is_open()) {
-		listenserver.start();
+	if (listenserver) {
+		server.start();
 	}
 
 	client.start();
@@ -84,9 +76,9 @@ int main (int argc, char** argv) {
 		SDL_SetRenderDrawColor(renderer, 0x0, 0x0, 0x0, 0xff);
 		SDL_RenderClear(renderer);
 
-		if (listenserver.is_open()) {
-			listenserver.tick();
-			listenserver.broadcast();
+		if (listenserver) {
+			server.tick();
+			server.broadcast();
 		}
 
 		client.listen();
@@ -107,8 +99,10 @@ int main (int argc, char** argv) {
 	console::addLine("Disconnected.");
 
 	client.close();
-	listenserver.close();
+	server.close();
 
-	cleanUp();
+	SDL_DestroyRenderer(renderer);
+	SDLNet_Quit();
+	SDL_Quit();
 	return 0;
 }

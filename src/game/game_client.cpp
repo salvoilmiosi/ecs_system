@@ -17,6 +17,9 @@ void game_client::listen() {
 		case net::PACKET_SERVER_MSG:
 			console::addLine("Server: ", readString(in));
 			break;
+		case net::PACKET_SERVER_CHAT:
+			console::addLine(readString(in), " : ", readString(in));
+			break;
 		case net::PACKET_SERVER_QUIT:
 			console::addLine("Server has quit");
 			sock.close();
@@ -74,7 +77,7 @@ void game_client::handleEvent(const SDL_Event &event) {
 		break;
 	case SDL_KEYDOWN:
 		if (event.key.keysym.sym == SDLK_SPACE) {
-			sock.sendCommand("state");
+			sock.sendStatePacket();
 		}
 		break;
 	default:

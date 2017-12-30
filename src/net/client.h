@@ -33,7 +33,7 @@ public:
 		close();
 	}
 
-	bool connect(IPaddress addr);
+	bool connect(IPaddress addr, const std::string &username);
 
 	void close();
 
@@ -41,8 +41,10 @@ public:
 		return sock != nullptr;
 	}
 
-	bool sendCommand(const std::string &cmd);
-
+	bool sendDisconnect(const std::string &msg);
+	bool sendStatePacket();
+	bool sendPing();
+	bool sendMessage(const std::string &msg);
 	bool sendInputCommand(const game::userinput::command &e);
 
 	bool send(packet_data data);

@@ -5,7 +5,7 @@
 
 namespace net {
 
-bool client_socket::connect(IPaddress addr) {
+bool client_socket::connect(IPaddress addr, const std::string &username) {
 	server_addr = addr;
 
 	sock = SDLNet_UDP_Open(0);
@@ -18,13 +18,14 @@ bool client_socket::connect(IPaddress addr) {
 
 	packet_writer connect_packet;
 	writeByte(connect_packet, PACKET_USER_CONNECT);
+	writeString(connect_packet, username);
 	send(connect_packet.data());
 
 	SDLNet_UDP_AddSocket(sock_set, sock);
 
 	client_thread = std::thread([&]() {
 		while (sock) {
-			sendCommand("ping");
+			sendPing();
 
 			int numready = SDLNet_CheckSockets(sock_set, CHECK_TIMEOUT);
 
@@ -48,7 +49,7 @@ bool client_socket::connect(IPaddress addr) {
 
 void client_socket::close() {
 	if (is_open()) {
-		sendCommand("disconnect \"Disconnect by user\"");
+		sendDisconnect("Disconnect by user");
 
 		SDLNet_UDP_DelSocket(sock_set, sock);
 		SDLNet_UDP_Close(sock);
@@ -59,10 +60,29 @@ void client_socket::close() {
 	}
 }
 
-bool client_socket::sendCommand(const std::string &cmd) {
+bool client_socket::sendStatePacket() {
 	packet_writer out;
-	writeByte(out, PACKET_USER_COMMAND);
-	writeString(out, cmd);
+	writeByte(out, PACKET_USER_STATE);
+	return send(out.data());
+}
+
+bool client_socket::sendPing() {
+	packet_writer out;
+	writeByte(out, PACKET_USER_PING);
+	return send(out.data());
+}
+
+bool client_socket::sendDisconnect(const std::string &msg) {
+	packet_writer out;
+	writeByte(out, PACKET_USER_DISCONNECT);
+	writeString(out, msg);
+	return send(out.data());
+}
+
+bool client_socket::sendMessage(const std::string &msg) {
+	packet_writer out;
+	writeByte(out, PACKET_USER_MSG);
+	writeString(out, msg);
 	return send(out.data());
 }
 

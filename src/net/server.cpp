@@ -141,56 +141,55 @@ void server_socket::received(UDPpacket &packet) {
 	if (type == PACKET_USER_CONNECT) {
 		if (sender != clients_connected.end()) return;
 
-		addClient(packet.address);
+		addClient(packet.address, reader);
 	} else {
 		if (sender == clients_connected.end()) return;
 
-		switch(type) {
-		case PACKET_USER_COMMAND:
-			parseCommand(*sender, reader);
-			break;
-		case PACKET_USER_INPUT:
-			parseInput(*sender, reader);
-			break;
-		case PACKET_NONE:
-		default:
-			break;
+		typedef void(server_socket::*cmd_func)(client_info&, packet_reader&);
+		static std::map<packet_type, cmd_func> commands = {
+			{PACKET_USER_DISCONNECT, clientDisconnect},
+			{PACKET_USER_PING, clientPing},
+			{PACKET_USER_STATE, clientState},
+			{PACKET_USER_MSG, clientMessage},
+			{PACKET_USER_INPUT, clientInput}
+		};
+
+		auto it = commands.find(type);
+		if (it != commands.end()) {
+			(this->*it->second)(*sender, reader);
 		}
 	}
 }
 
-void server_socket::addClient(IPaddress address) {
+void server_socket::addClient(IPaddress address, packet_reader &in) {
 	std::unique_lock lock(c_mutex);
 	
 	client_info sender;
+	sender.name = ipString(address);
 	sender.address = address;
 	sender.last_seen = SDL_GetTicks();
+
+	if (!in.eof()) {
+		//sender.name = readString(in);
+	}
 
 	clients_connected.push_back(sender);
 
 	lock.unlock();
-	sendServerMsg(console::format(ipString(address), " connected."));
+	sendServerMsg(console::format(sender.name, " connected."));
 
-	clientState(sender, "");
+	clientState(sender, in);
 }
 
-void server_socket::parseCommand(client_info &sender, packet_reader &in) {
-	typedef void (server_socket::*cmd_func)(client_info&, std::string_view args);
-	static std::map<std::string, cmd_func, std::less<>> commands = {
-		{"state", clientState},
-		{"ping", clientPing},
-		{"disconnect", clientDisconnect}
-	};
-
-	std::string cmd = readString(in);
-
-	auto it = commands.find(console::getCommand(cmd));
-	if (it != commands.end()) {
-		(this->*it->second)(sender, cmd);
-	}
+void server_socket::clientMessage(client_info &sender, packet_reader &in) {
+	packet_writer pack;
+	writeByte(pack, PACKET_SERVER_CHAT);
+	writeString(pack, sender.name);
+	writeString(pack, readString(in));
+	sendAll(pack.data());
 }
 
-void server_socket::parseInput(client_info &sender, packet_reader &in) {
+void server_socket::clientInput(client_info &sender, packet_reader &in) {
 	game::userinput::command cmd;
 	cmd.cmd = static_cast<game::userinput::command_type>(readByte(in));
 
@@ -201,8 +200,7 @@ void server_socket::parseInput(client_info &sender, packet_reader &in) {
 	sender.input.handleCommand(wld, cmd);
 }
 
-
-void server_socket::clientState(client_info &sender, std::string_view args) {
+void server_socket::clientState(client_info &sender, packet_reader &reader) {
 	packet_writer packet;
 
 	writeByte(packet, PACKET_EDITLOG);
@@ -211,17 +209,17 @@ void server_socket::clientState(client_info &sender, std::string_view args) {
 	send(packet.data(), sender.address);
 }
 
-void server_socket::clientPing(client_info &sender, std::string_view args) {
+void server_socket::clientPing(client_info &sender, packet_reader &reader) {
 	sender.last_seen = SDL_GetTicks();
 }
 
-void server_socket::clientDisconnect(client_info &sender, std::string_view args) {
+void server_socket::clientDisconnect(client_info &sender, packet_reader &reader) {
 	std::unique_lock lock(c_mutex);
 
 	clients_connected.erase(std::remove_if(clients_connected.begin(), clients_connected.end(), [&](auto &c) {
 		if (c.address == sender.address) {
 			lock.unlock();
-			sendServerMsg(console::format(ipString(c.address), " disconnected (", console::getArgument(args, 1), ")"));
+			sendServerMsg(console::format(c.name, " disconnected (", readString(reader), ")"));
 			return true;
 		} else {
 			return false;
@@ -237,7 +235,7 @@ void server_socket::testClients() {
 	clients_connected.erase(std::remove_if(clients_connected.begin(), clients_connected.end(), [&](auto &c) {
 		if (now - c.last_seen > CLIENT_TIMEOUT) {
 			lock.unlock();
-			sendServerMsg(console::format(ipString(c.address), " timed out."));
+			sendServerMsg(console::format(c.name, " timed out."));
 			return true;
 		} else {
 			return false;

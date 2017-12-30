@@ -8,6 +8,8 @@ namespace {
 const char *TITLE_SERVER = "Sistema ECS - Server";
 const char *TITLE_CLIENT = "Sistema ECS - Client";
 
+const char *USER_NAME = "User";
+
 SDL_Renderer *renderer;
 
 bool createWindow(const char *title) {
@@ -53,7 +55,7 @@ int main (int argc, char** argv) {
 		return 2;
 	}
 
-	if (! client.connect(addr)) {
+	if (! client.connect(addr, USER_NAME)) {
 		return 3;
 	}
 	

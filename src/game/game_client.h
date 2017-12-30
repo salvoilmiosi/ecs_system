@@ -13,8 +13,8 @@ namespace game {
 
 class game_client {
 public:	
-	bool connect(IPaddress addr) {
-		return sock.connect(addr);
+	bool connect(IPaddress addr, const std::string &username) {
+		return sock.connect(addr, username);
 	}
 
 	void start();

@@ -53,6 +53,7 @@ private:
 	Uint32 maxPid;
 
 	struct client_info {
+		std::string name;
 		IPaddress address;
 		Uint32 last_seen;
 		game::userinput::handler input;
@@ -63,14 +64,13 @@ private:
 	
 	void received(UDPpacket &packet);
 
-	void addClient(IPaddress address);
+	void addClient			(IPaddress address, packet_reader &in);
 
-	void parseCommand(client_info &sender, packet_reader &reader);
-	void parseInput(client_info &sender, packet_reader &reader);
-
-	void clientState(client_info &sender, std::string_view args);
-	void clientPing(client_info &sender, std::string_view args);
-	void clientDisconnect(client_info &sender, std::string_view args);
+	void clientDisconnect	(client_info &sender, packet_reader &reader);
+	void clientPing			(client_info &sender, packet_reader &reader);
+	void clientState		(client_info &sender, packet_reader &reader);
+	void clientMessage		(client_info &sender, packet_reader &reader);
+	void clientInput		(client_info &sender, packet_reader &reader);
 
 	void testClients();
 };

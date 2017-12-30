@@ -28,7 +28,7 @@ public:
 	}
 
 	bool is_open() {
-		return !quit;
+		return sock.is_open();
 	}
 
 	void close() {
@@ -39,8 +39,6 @@ private:
 	ecs::world_out<MyComponents> wld;
 
 	net::server_socket sock;
-
-	bool quit = false;
 };
 
 }

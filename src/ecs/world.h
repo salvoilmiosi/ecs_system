@@ -157,8 +157,8 @@ public:
 
 	void updateEntities();
 
-	// func must be of type (entity_id, Components...)
-	// Tags are stripped away from Ts into Components
+	// func's arguments must be  (entity_id, Components...)
+	// Tags are stripped out of Components
 	template<typename ... Ts>
 	void executeSystem(auto &&func) {
 		static component_mask mask = generateMask<Ts...>();

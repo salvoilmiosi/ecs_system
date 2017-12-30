@@ -30,13 +30,12 @@ public:
 	}
 
 	~client_socket() {
-		disconnect();
+		close();
 	}
 
 	bool connect(IPaddress addr);
 
 	void close();
-	void disconnect();
 
 	bool is_open() {
 		return sock != nullptr;
@@ -68,7 +67,7 @@ private:
 	UDPpacket receiver;
 	packet_data recv_data;
 
-	std::mutex j_mutex, s_mutex;
+	std::mutex j_mutex;
 
 	struct recv_packet {
 		uint32_t pid;

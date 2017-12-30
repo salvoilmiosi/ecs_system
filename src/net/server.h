@@ -29,6 +29,10 @@ public:
 
 	void close();
 
+	bool is_open() {
+		return sock != nullptr;
+	}
+
 	void sendServerMsg(const std::string &msg);
 
 	void send(const packet_data &packet, IPaddress addr);

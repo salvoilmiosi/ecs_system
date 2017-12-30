@@ -6,6 +6,30 @@ void game_client::start() {
 
 }
 
+void game_client::listen() {
+	sock.forEachPacket([&](auto &x) {
+		packet_reader in(x);
+		net::packet_type type = static_cast<net::packet_type>(readByte(in));
+		switch (type) {
+		case net::PACKET_EDITLOG:
+			in_logger.read(in);
+			break;
+		case net::PACKET_SERVER_MSG:
+			console::addLine("Server: ", readString(in));
+			break;
+		case net::PACKET_SERVER_QUIT:
+			console::addLine("Server has quit");
+			sock.close();
+			break;
+		case net::PACKET_NONE:
+		default:
+			break;
+		}
+	});
+
+	wld.applyEdits(in_logger);
+}
+
 void game_client::tick() {
 	wld.executeSystem<position, velocity>([&](ecs::entity_id id, position &pos, velocity &vel) {
 		pos.value.x += vel.value.x;
@@ -26,7 +50,7 @@ void game_client::tick() {
 	});
 
 	wld.executeSystem<position, generator>([&](ecs::entity_id id, position &pos) {
-		generateParticles(id, pos);
+		generateParticles(pos);
 	});
 
 	wld.updateEntities();
@@ -38,7 +62,27 @@ void game_client::render(SDL_Renderer *renderer) {
 	});
 }
 
-void game_client::generateParticles(ecs::entity_id, position &pos) {
+void game_client::handleEvent(const SDL_Event &event) {
+	switch (event.type) {
+	case SDL_QUIT:
+		sock.close();
+		break;
+	case SDL_MOUSEBUTTONDOWN:
+	case SDL_MOUSEMOTION:
+	case SDL_MOUSEBUTTONUP:
+		sock.sendInputCommand(userinput::handleEvent(event));
+		break;
+	case SDL_KEYDOWN:
+		if (event.key.keysym.sym == SDLK_SPACE) {
+			sock.sendCommand("state");
+		}
+		break;
+	default:
+		break;
+	}
+}
+
+void game_client::generateParticles(position &pos) {
 	for (int i=0; i<5; ++i) {
 		Uint8 r = rand() % 0xff;
 		Uint8 g = rand() % 0xff;

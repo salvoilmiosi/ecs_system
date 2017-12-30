@@ -5,25 +5,44 @@
 
 #include "ecs/world_io.h"
 
+#include "net/client.h"
+
 #include "components.h"
 
 namespace game {
 
 class game_client {
-public:
+public:	
+	bool connect(IPaddress addr) {
+		return sock.connect(addr);
+	}
+
 	void start();
+
 	void tick();
 
-	void render(SDL_Renderer *renderer);
+	void listen();
 
-	void applyEdits(auto &edits) {
-		wld.applyEdits(edits);
+	void render(SDL_Renderer *renderer);
+	
+	void handleEvent(const SDL_Event &e);
+
+	bool is_open() {
+		return sock.is_open();
+	}
+
+	void close() {
+		sock.close();
 	}
 
 private:
 	ecs::world_in<MyComponents> wld;
 
-	void generateParticles(ecs::entity_id, position &pos);
+	ecs::edit_logger<MyComponents> in_logger;
+
+	net::client_socket sock;
+
+	void generateParticles(position &pos);
 
 	void renderEntity(SDL_Renderer *renderer, sprite &spr, position &pos, scale &s);
 };

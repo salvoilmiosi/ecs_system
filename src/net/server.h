@@ -5,7 +5,7 @@
 
 #include <thread>
 #include <shared_mutex>
-#include <vector>
+#include <map>
 #include <string_view>
 
 #include "ecs/world_io.h"
@@ -59,13 +59,12 @@ private:
 		game::userinput::handler input;
 	};
 
-	std::vector<client_info> clients_connected;
+	std::map<IPaddress, client_info, address_cmp> clients_connected;
 	std::shared_mutex c_mutex;
 	
 	void received(UDPpacket &packet);
 
-	void addClient			(IPaddress address, packet_reader &in);
-
+	void addClient			(client_info &sender, packet_reader &reader);
 	void clientDisconnect	(client_info &sender, packet_reader &reader);
 	void clientPing			(client_info &sender, packet_reader &reader);
 	void clientState		(client_info &sender, packet_reader &reader);

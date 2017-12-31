@@ -52,6 +52,12 @@ constexpr bool operator == (const IPaddress &a, const IPaddress &b) {
 	return a.host == b.host && a.port == b.port;
 }
 
+struct address_cmp {
+	bool operator()(const IPaddress &a, const IPaddress &b) {
+		return (a.host == b.host) ? (a.port < b.port) : (a.host < b.host);
+	}
+};
+
 }
 
 #endif // __SOCKET_H__

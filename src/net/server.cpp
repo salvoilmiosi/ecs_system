@@ -14,7 +14,7 @@ bool server_socket::open(uint16_t port) {
 		return false;
 	}
 
-	std::cout << "Server open on port " << port << std::endl;
+	console::addLine("Server open on port ", port);
 
 	SDLNet_UDP_AddSocket(sock_set, sock);
 
@@ -121,8 +121,8 @@ void server_socket::send(const packet_data &data, IPaddress addr) {
 void server_socket::sendAll(const packet_data &data) {
 	std::shared_lock lock(c_mutex);
 
-	for (auto &c : clients_connected) {
-		send(data, c.address);
+	for (auto& c : clients_connected) {
+		send(data, c.first);
 	}
 }
 
@@ -132,48 +132,46 @@ void server_socket::received(UDPpacket &packet) {
 
 	packet_type type = static_cast<packet_type>(readByte(reader));
 
-	c_mutex.lock_shared();
-	auto sender = std::find_if(clients_connected.begin(), clients_connected.end(), [&](auto &c) {
-		return c.address == packet.address;
-	});
-	c_mutex.unlock_shared();
+	std::unique_lock lock(c_mutex);
+	client_info &sender = clients_connected[packet.address];
+	lock.unlock();
 
-	if (type == PACKET_USER_CONNECT) {
-		if (sender != clients_connected.end()) return;
-
-		addClient(packet.address, reader);
-	} else {
-		if (sender == clients_connected.end()) return;
-
-		typedef void(server_socket::*cmd_func)(client_info&, packet_reader&);
-		static std::map<packet_type, cmd_func> commands = {
-			{PACKET_USER_DISCONNECT, clientDisconnect},
-			{PACKET_USER_PING, clientPing},
-			{PACKET_USER_STATE, clientState},
-			{PACKET_USER_MSG, clientMessage},
-			{PACKET_USER_INPUT, clientInput}
-		};
-
-		auto it = commands.find(type);
-		if (it != commands.end()) {
-			(this->*it->second)(*sender, reader);
-		}
+	switch (type) {
+	case PACKET_USER_CONNECT:
+		sender.address = packet.address;
+		addClient(sender, reader);
+		break;
+	case PACKET_USER_DISCONNECT:
+		clientDisconnect(sender, reader);
+		break;
+	case PACKET_USER_PING:
+		clientPing(sender, reader);
+		break;
+	case PACKET_USER_STATE:
+		clientState(sender, reader);
+		break;
+	case PACKET_USER_MSG:
+		clientMessage(sender, reader);
+		break;
+	case PACKET_USER_INPUT:
+		clientInput(sender, reader);
+		break;
+	default:
+		lock.lock();
+		clients_connected.erase(packet.address);
+		break;
 	}
 }
 
-void server_socket::addClient(IPaddress address, packet_reader &in) {
+void server_socket::addClient(client_info &sender, packet_reader &in) {
 	std::unique_lock lock(c_mutex);
 	
-	client_info sender;
-	sender.name = ipString(address);
-	sender.address = address;
+	sender.name = ipString(sender.address);
 	sender.last_seen = SDL_GetTicks();
 
 	if (!in.eof()) {
 		//sender.name = readString(in);
 	}
-
-	clients_connected.push_back(sender);
 
 	lock.unlock();
 	sendServerMsg(console::format(sender.name, " connected."));
@@ -214,33 +212,25 @@ void server_socket::clientPing(client_info &sender, packet_reader &reader) {
 }
 
 void server_socket::clientDisconnect(client_info &sender, packet_reader &reader) {
-	std::unique_lock lock(c_mutex);
+	sendServerMsg(console::format(sender.name, " disconnected (", readString(reader), ")"));
 
-	clients_connected.erase(std::remove_if(clients_connected.begin(), clients_connected.end(), [&](auto &c) {
-		if (c.address == sender.address) {
-			lock.unlock();
-			sendServerMsg(console::format(c.name, " disconnected (", readString(reader), ")"));
-			return true;
-		} else {
-			return false;
-		}
-	}), clients_connected.end());
+	std::unique_lock lock(c_mutex);
+	clients_connected.erase(sender.address);
 }
 
 void server_socket::testClients() {
-	std::unique_lock lock(c_mutex);
+	std::shared_lock lock(c_mutex);
 
 	Uint32 now = SDL_GetTicks();
 
-	clients_connected.erase(std::remove_if(clients_connected.begin(), clients_connected.end(), [&](auto &c) {
-		if (now - c.last_seen > CLIENT_TIMEOUT) {
-			lock.unlock();
-			sendServerMsg(console::format(c.name, " timed out."));
-			return true;
+	for (auto it = clients_connected.begin(); it != clients_connected.end(); ) {
+		if (now - it->second.last_seen > CLIENT_TIMEOUT) {
+			sendServerMsg(console::format(it->second.name, " timed out."));
+			clients_connected.erase(it++);
 		} else {
-			return false;
+			++it;
 		}
-	}), clients_connected.end());
+	}
 }
 
 }

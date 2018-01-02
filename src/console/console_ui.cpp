@@ -119,7 +119,11 @@ void console_ui::tick() {
 
 void console_ui::render(SDL_Renderer *renderer) {
 	if (!font) {
-		font = TTF_OpenFont("COURIER.TTF", font_size);
+		if (type == CONSOLE_DEV) {
+			font = TTF_OpenFont("font/courier.ttf", font_size);
+		} else {
+			font = TTF_OpenFont("font/OpenSans-Regular.ttf", font_size);
+		}
 		if (!font) return;
 	}
 

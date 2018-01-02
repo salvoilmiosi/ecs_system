@@ -144,6 +144,12 @@ public:
 		entity_list[ent].mask.reset();
 	}
 
+	void clear() {
+		currentSize = 0;
+		nextSize = 0;
+		maxSize = 0;
+	}
+
 	size_t entityCount() {
 		return currentSize;
 	}

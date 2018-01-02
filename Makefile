@@ -49,12 +49,12 @@ all: $(MAINS) copy_resources
 $(BUILDS):
 	$(MAKE) "BUILD=$@"
 
-RESOURCES = $(wildcard $(RES_DIR)/*)
+RESOURCES = $(wildcard $(RES_DIR)/font/*.ttf)
 OUT_RESOURCES = $(patsubst $(RES_DIR)/%,$(BIN_DIR)/%,$(RESOURCES))
 
 copy_resources: $(OUT_RESOURCES)
 $(OUT_RESOURCES): $(RESOURCES)
-	cp $(RESOURCES) $(OUT_RESOURCES)
+	cp -r $(RES_DIR)/* $(BIN_DIR)
 
 DEPFLAGS = -MT $@ -MMD -MP -MF $(OBJ_DIR)/$*.Td
 

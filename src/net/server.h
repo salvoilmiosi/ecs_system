@@ -24,6 +24,7 @@ public:
 
 	~server_socket() {
 		close();
+		SDLNet_FreeSocketSet(sock_set);
 	}
 
 	bool open(uint16_t port = PORT);

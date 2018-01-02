@@ -7,10 +7,7 @@
 
 namespace {
 
-const char *TITLE_SERVER = "Sistema ECS - Server";
-const char *TITLE_CLIENT = "Sistema ECS - Client";
-
-const char *USER_NAME = "User";
+const char *TITLE = "Sistema ECS";
 
 SDL_Renderer *renderer;
 
@@ -33,18 +30,7 @@ bool initSDL() {
 
 	SDL_StopTextInput();
 
-	return true;
-}
-
-void cleanupSDL() {
-	SDL_DestroyRenderer(renderer);
-	TTF_Quit();
-	SDLNet_Quit();
-	SDL_Quit();
-}
-
-bool createWindow(const char *title) {
-	SDL_Window *window = SDL_CreateWindow(title,
+	SDL_Window *window = SDL_CreateWindow(TITLE,
 		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
 		SCREEN_W, SCREEN_H, SDL_WINDOW_SHOWN);
 	if (window == nullptr)
@@ -59,8 +45,17 @@ bool createWindow(const char *title) {
 	return true;
 }
 
+void cleanupSDL() {
+	SDL_DestroyRenderer(renderer);
+	TTF_Quit();
+	SDLNet_Quit();
+	SDL_Quit();
+}
+
 void parseCommand(const std::string &cmd) {
-	if (!client.command(cmd) && !server.command(cmd)) {
+	bool serv_cmd = server.command(cmd);
+	bool client_cmd = client.command(cmd);
+	if (!serv_cmd && !client_cmd) {
 		console_dev.addLine(console::COLOR_ERROR, console::format(cmd, " is not a valid command."));
 	}
 }
@@ -72,35 +67,7 @@ int main (int argc, char** argv) {
 		return 1;
 	}
 
-	bool listenserver = false;
-
-	if (argc == 1) {
-		if (server.open()) {
-			listenserver = true;
-		}
-	}
-
-	const char *addr_str = (!listenserver && argc > 1) ? argv[1] : "localhost";
-
-	IPaddress addr;
-	if (SDLNet_ResolveHost(&addr, addr_str, net::PORT)) {
-		std::cerr << "Could not resolve " << addr_str << std::endl;
-		return 2;
-	}
-
-	if (! client.connect(addr, USER_NAME)) {
-		return 3;
-	}
-	
-	if (! createWindow(listenserver ? TITLE_SERVER : TITLE_CLIENT)) {
-		return 4;
-	}
-
 	timer fps;
-
-	if (listenserver) {
-		server.start();
-	}
 
 	client.start();
 
@@ -111,7 +78,7 @@ int main (int argc, char** argv) {
 		SDL_SetRenderDrawColor(renderer, 0x0, 0x0, 0x0, 0xff);
 		SDL_RenderClear(renderer);
 
-		if (listenserver) {
+		if (server.is_open()) {
 			server.tick();
 			server.broadcast();
 		}
@@ -132,8 +99,6 @@ int main (int argc, char** argv) {
 			SDL_Delay(1000 / net::TICKRATE - fps.get_ticks());
 		}
 	}
-
-	console_dev.addLine(console::COLOR_LOG, "Disconnected.");
 
 	client.close();
 	server.close();

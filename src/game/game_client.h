@@ -17,8 +17,29 @@ class game_client {
 public:
 	game_client(console::console_ui &console_dev);
 	
-	bool connect(IPaddress addr, const std::string &username) {
+	bool connect(IPaddress addr) {
+		if (sock.is_open()) {
+			disconnect();
+		}
 		return sock.connect(addr, username);
+	}
+
+	bool connect(const std::string &str) {
+		IPaddress addr;
+		if (SDLNet_ResolveHost(&addr, str.c_str(), net::PORT)) {
+			console_dev.addLine(console::COLOR_ERROR, console::format("Could not resolve ", str));
+			return false;
+		}
+		return connect(addr);
+	}
+
+	void disconnect() {
+		if (!sock.is_open()) return;
+		
+		console_dev.addLine(console::COLOR_LOG, "Disconnected.");
+
+		sock.disconnect();
+		wld.clear();
 	}
 
 	void start();
@@ -34,16 +55,21 @@ public:
 	bool command(const std::string &full_cmd);
 
 	bool is_open() {
-		return sock.is_open();
+		return open;
 	}
 
 	void close() {
-		sock.close();
+		disconnect();
+		open = false;
 	}
 
 private:
 	console::console_ui &console_dev;
 	console::console_ui console_chat;
+
+	bool open = true;
+
+	std::string username;
 	
 	ecs::world_in<MyComponents> wld;
 

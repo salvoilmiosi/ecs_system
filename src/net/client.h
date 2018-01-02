@@ -30,12 +30,13 @@ public:
 	}
 
 	~client_socket() {
-		close();
+		disconnect();
+		SDLNet_FreeSocketSet(sock_set);
 	}
 
 	bool connect(IPaddress addr, const std::string &username);
 
-	void close();
+	void disconnect();
 
 	bool is_open() {
 		return sock != nullptr;

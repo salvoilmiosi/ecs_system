@@ -6,6 +6,8 @@
 namespace net {
 
 bool client_socket::connect(IPaddress addr, const std::string &username) {
+	disconnect(); // If connected already
+
 	server_addr = addr;
 
 	sock = SDLNet_UDP_Open(0);
@@ -47,7 +49,7 @@ bool client_socket::connect(IPaddress addr, const std::string &username) {
 	return true;
 }
 
-void client_socket::close() {
+void client_socket::disconnect() {
 	if (is_open()) {
 		sendDisconnect("Disconnect by user");
 

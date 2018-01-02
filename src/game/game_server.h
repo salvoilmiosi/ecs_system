@@ -11,6 +11,10 @@ class game_server {
 public:
 	game_server(console::console &console_dev) : sock(wld, console_dev) {}
 
+	~game_server() {
+		close();
+	}
+
 	bool open() {
 		return sock.open();
 	}
@@ -29,6 +33,7 @@ public:
 
 	void close() {
 		sock.close();
+		wld.clear();
 	}
 
 private:

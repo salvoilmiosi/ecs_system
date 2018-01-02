@@ -7,6 +7,8 @@
 namespace net {
 
 bool server_socket::open(uint16_t port) {
+	close(); // If it's open
+
 	sock = SDLNet_UDP_Open(port);
 
 	if (!sock) {
@@ -27,7 +29,7 @@ bool server_socket::open(uint16_t port) {
 		receiver.data = recv_data;
 		receiver.maxlen = PACKET_SIZE;
 
-		while (sock) {
+		while (is_open()) {
 			testClients();
 
 			int numready = SDLNet_CheckSockets(sock_set, CHECK_TIMEOUT);
@@ -43,7 +45,7 @@ bool server_socket::open(uint16_t port) {
 }
 
 void server_socket::close() {
-	if (sock) {
+	if (is_open()) {
 		packet_writer out;
 		writeByte(out, PACKET_SERVER_QUIT);
 		sendAll(out.data());
@@ -51,6 +53,11 @@ void server_socket::close() {
 		SDLNet_UDP_DelSocket(sock_set, sock);
 		SDLNet_UDP_Close(sock);
 		sock = nullptr;
+
+		clients_connected.clear();
+		wld.clear();
+
+		console_dev.addLine(console::COLOR_LOG, "Server closed.");
 	}
 	if (serv_thread.joinable()) {
 		serv_thread.join();

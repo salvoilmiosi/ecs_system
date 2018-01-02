@@ -37,16 +37,16 @@ void game_server::broadcast() {
 }
 
 bool game_server::command(const std::string &full_cmd) {
-	if (!is_open()) {
+	std::string_view cmd = console::getCommand(full_cmd);
+	if (cmd == "quit" || cmd == "close") {
+		close();
+	} else if (cmd == "open") {
+		open();
+		start();
+	} else {
 		return false;
 	}
-	
-	std::string_view cmd = console::getCommand(full_cmd);
-	if (cmd == "quit") {
-		close();
-		return true;
-	}
-	return false;
+	return true;
 }
 
 }

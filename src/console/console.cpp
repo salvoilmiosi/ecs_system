@@ -44,6 +44,7 @@ std::string_view getCommand(std::string_view cmd) {
 }
 
 std::string_view getArgs(std::string_view cmd) {
+	// Should return the whole string after the first argument but I'm lazy
 	return getArgument(cmd, 1);
 }
 

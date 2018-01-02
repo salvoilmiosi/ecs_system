@@ -31,8 +31,8 @@ void game_client::listen() {
 			break;
 		}
 		case net::PACKET_SERVER_QUIT:
-			console_chat.addLine(console::COLOR_LOG, "Server has quit");
-			sock.close();
+			console_chat.addLine(console::COLOR_LOG, "Server has quit.");
+			disconnect();
 			break;
 		case net::PACKET_NONE:
 		default:
@@ -81,7 +81,7 @@ void game_client::render(SDL_Renderer *renderer) {
 
 void game_client::handleEvent(const SDL_Event &event) {
 	if (event.type == SDL_QUIT) {
-		sock.close();
+		close();
 		return;
 	}
 
@@ -101,17 +101,23 @@ void game_client::handleEvent(const SDL_Event &event) {
 
 bool game_client::command(const std::string &full_cmd) {
 	std::string_view cmd = console::getCommand(full_cmd);
-	if (cmd == "quit" || cmd == "disconnect") {
+	if (cmd == "quit") {
 		close();
-		return true;
+	} else if (cmd == "disconnect") {
+		disconnect();
 	} else if (cmd == "say") {
 		sock.sendMessage(std::string(console::getArgs(full_cmd)));
-		return true;
 	} else if (cmd == "state") {
 		sock.sendStatePacket();
-		return true;
+	} else if (cmd == "name") {
+		username = console::getArgument(full_cmd, 1);
+		//sock.sendUsernamePacket(username);
+	} else if (cmd == "connect") {
+		connect(std::string(console::getArgument(full_cmd, 1)));
+	} else {
+		return false;
 	}
-	return false;
+	return true;
 }
 
 void game_client::generateParticles(position &pos) {

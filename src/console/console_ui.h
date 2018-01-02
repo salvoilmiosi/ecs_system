@@ -3,6 +3,8 @@
 
 #include "console.h"
 
+#include <SDL2/SDL_ttf.h>
+
 #include <functional>
 
 namespace console {
@@ -21,7 +23,7 @@ public:
 
 	console_line &operator = (const std::string &str);
 
-	void render(SDL_Renderer *renderer, int x, int y);
+	void render(SDL_Renderer *renderer, TTF_Font *font, int x, int y);
 
 	int width() {
 		return rect.w;
@@ -51,13 +53,7 @@ class console_ui : public console {
 public:
 	typedef std::function<void(const std::string &)> string_func;
 
-	console_ui(string_func func, console_type type) : parseCommandFunc(func), type(type) {
-		if (type == CONSOLE_DEV) {
-			key_to_open = SDL_SCANCODE_GRAVE;
-		} else if (type == CONSOLE_CHAT) {
-			key_to_open = SDL_SCANCODE_RETURN;
-		}
-	}
+	console_ui(string_func func, console_type type);
 
 	~console_ui() {
 		lines.clear();
@@ -86,7 +82,8 @@ private:
 
 	console_type type;
 
-	SDL_Scancode key_to_open;
+	TTF_Font *font;
+	int font_size = 16;
 };
 
 }

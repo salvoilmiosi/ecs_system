@@ -10,6 +10,7 @@ OUT = out
 INC_DIR = include $(SRC)
 BIN_DIR = bin
 OBJ_DIR = obj
+RES_DIR = resource
 MAINS = server client
 BUILDS = debug release
 OUT = ecs_system
@@ -43,10 +44,17 @@ ifeq ($(OS),Windows_NT)
 	CLIENT_LIBS += -mwindows
 endif
 
-all: $(MAINS)
+all: $(MAINS) copy_resources
 
 $(BUILDS):
 	$(MAKE) "BUILD=$@"
+
+RESOURCES = $(wildcard $(RES_DIR)/*)
+OUT_RESOURCES = $(patsubst $(RES_DIR)/%,$(BIN_DIR)/%,$(RESOURCES))
+
+copy_resources: $(OUT_RESOURCES)
+$(OUT_RESOURCES): $(RESOURCES)
+	cp $(RESOURCES) $(OUT_RESOURCES)
 
 DEPFLAGS = -MT $@ -MMD -MP -MF $(OBJ_DIR)/$*.Td
 
@@ -85,5 +93,6 @@ clean:
 	rm -f $(OBJECTS)
 	rm -f $(DEPS)
 	rm -f $(BINARIES)
+	rm -f $(OUT_RESOURCES)
 
 .PHONY: $(MAINS) $(BUILDS) clean

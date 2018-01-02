@@ -107,6 +107,9 @@ bool game_client::command(const std::string &full_cmd) {
 	} else if (cmd == "say") {
 		sock.sendMessage(std::string(console::getArgs(full_cmd)));
 		return true;
+	} else if (cmd == "state") {
+		sock.sendStatePacket();
+		return true;
 	}
 	return false;
 }

@@ -3,7 +3,7 @@
 namespace game {
 
 void game_server::start() {
-	wld.createEntity(position(0.f, SCREEN_H), velocity(3.f, -10.f), acceleration(0.f, 0.1f), health(200), generator());
+	//wld.createEntity(position(0.f, SCREEN_H), velocity(3.f, -10.f), acceleration(0.f, 0.1f), health(200), generator());
 }
 
 void game_server::tick() {

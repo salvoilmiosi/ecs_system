@@ -75,8 +75,9 @@ int main (int argc, char** argv) {
 	bool listenserver = false;
 
 	if (argc == 1) {
-		listenserver = true;
-		server.open();
+		if (server.open()) {
+			listenserver = true;
+		}
 	}
 
 	const char *addr_str = (!listenserver && argc > 1) ? argv[1] : "localhost";

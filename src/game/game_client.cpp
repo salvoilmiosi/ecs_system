@@ -101,7 +101,7 @@ void game_client::handleEvent(const SDL_Event &event) {
 
 bool game_client::command(const std::string &full_cmd) {
 	std::string_view cmd = console::getCommand(full_cmd);
-	if (cmd == "quit") {
+	if (cmd == "quit" || cmd == "disconnect") {
 		close();
 		return true;
 	} else if (cmd == "say") {

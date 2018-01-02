@@ -18,7 +18,7 @@ namespace net {
 
 class server_socket {
 public:
-	server_socket(ecs::world_io<MyComponents> &wld) : wld(wld) {
+	server_socket(ecs::world_io<MyComponents> &wld, console::console &console_dev) : wld(wld), console_dev(console_dev) {
 		sock_set = SDLNet_AllocSocketSet(1);
 	}
 
@@ -44,6 +44,7 @@ private:
 	void sendSliced(const packet_data &packet, IPaddress addr);
 
 	ecs::world_io<MyComponents> &wld;
+	console::console &console_dev;
 
 	UDPsocket sock = nullptr;
 	SDLNet_SocketSet sock_set;

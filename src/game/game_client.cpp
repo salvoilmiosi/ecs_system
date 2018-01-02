@@ -2,6 +2,12 @@
 
 namespace game {
 
+game_client::game_client(console::console_ui &console_dev) :
+	console_dev(console_dev),
+	console_chat([&](const std::string &str) {
+		sock.sendMessage(str);
+	}, console::CONSOLE_CHAT) {}
+
 void game_client::start() {
 
 }
@@ -15,13 +21,17 @@ void game_client::listen() {
 			in_logger.read(in);
 			break;
 		case net::PACKET_SERVER_MSG:
-			console::addLine("Server: ", readString(in));
+			console_chat.addLine(console::COLOR_LOG, console::format("Server: ", readString(in)));
 			break;
 		case net::PACKET_SERVER_CHAT:
-			console::addLine(readString(in), " : ", readString(in));
+		{
+			std::string name = readString(in);
+			std::string message = readString(in);
+			console_chat.addLine(console::COLOR_DEFAULT, console::format(name, " : ", message));
 			break;
+		}
 		case net::PACKET_SERVER_QUIT:
-			console::addLine("Server has quit");
+			console_chat.addLine(console::COLOR_LOG, "Server has quit");
 			sock.close();
 			break;
 		case net::PACKET_NONE:
@@ -57,32 +67,48 @@ void game_client::tick() {
 	});
 
 	wld.updateEntities();
+
+	console_chat.tick();
 }
 
 void game_client::render(SDL_Renderer *renderer) {
 	wld.executeSystem<sprite, position, scale>([&](ecs::entity_id id, sprite &spr, position &pos, scale &sca) {
 		renderEntity(renderer, spr, pos, sca);
 	});
+
+	console_chat.render(renderer);
 }
 
 void game_client::handleEvent(const SDL_Event &event) {
-	switch (event.type) {
-	case SDL_QUIT:
+	if (event.type == SDL_QUIT) {
 		sock.close();
-		break;
+		return;
+	}
+
+	if (! console_dev.handleEvent(event)) return;
+	if (! console_chat.handleEvent(event)) return;
+
+	switch (event.type) {
 	case SDL_MOUSEBUTTONDOWN:
 	case SDL_MOUSEMOTION:
 	case SDL_MOUSEBUTTONUP:
 		sock.sendInputCommand(userinput::handleEvent(event));
 		break;
-	case SDL_KEYDOWN:
-		if (event.key.keysym.sym == SDLK_SPACE) {
-			sock.sendStatePacket();
-		}
-		break;
 	default:
 		break;
 	}
+}
+
+bool game_client::command(const std::string &full_cmd) {
+	std::string_view cmd = console::getCommand(full_cmd);
+	if (cmd == "quit") {
+		close();
+		return true;
+	} else if (cmd == "say") {
+		sock.sendMessage(std::string(console::getArgs(full_cmd)));
+		return true;
+	}
+	return false;
 }
 
 void game_client::generateParticles(position &pos) {

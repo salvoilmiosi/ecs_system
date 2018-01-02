@@ -3,7 +3,8 @@ LD = g++
 MAKE = make
 CFLAGS = -Wall --std=c++1z
 LDFLAGS =
-LIBS = -lSDL2 -lSDL2_net -pthread
+LIBS = -lSDL2 -lSDL2_net -lSDL2_ttf -pthread
+CLIENT_LIBS = 
 SRC = src
 OUT = out
 INC_DIR = include $(SRC)
@@ -37,8 +38,9 @@ endif
 
 ifeq ($(OS),Windows_NT)
 	MAKE := mingw32-make
-	LIBS := -lmingw32 -lSDL2main -lSDL2 -lSDL2_net -pthread
+	LIBS := -lmingw32 -lSDL2main $(LIBS)
 	BIN_EXT := .exe
+	CLIENT_LIBS += -mwindows
 endif
 
 all: $(MAINS)
@@ -58,15 +60,15 @@ DEPS = $(patsubst $(SRC)/%,$(OBJ_DIR)/%.d,$(basename $(SOURCES)))
 
 BINARIES = $(patsubst %,$(BIN_DIR)/$(OUT)_%$(BIN_EXT),$(MAINS))
 
-$(MAINS): $(BINARIES)
-
-$(BIN_DIR)/$(OUT)_%$(BIN_EXT): $(OBJECTS_NOMAINS) $(OBJ_DIR)/main_%.o
+server: $(BIN_DIR)/$(OUT)_server$(BIN_EXT)
+$(BIN_DIR)/$(OUT)_server$(BIN_EXT): $(OBJECTS_NOMAINS) $(OBJ_DIR)/main_server.o
 	@mkdir -p $(dir $@)
 	$(LD) -o $@ $^ $(LDFLAGS) $(LIBS)
 
-release/bin/$(OUT)_client.exe: $(OBJECTS_NOMAINS) $(OBJ_DIR)/main_client.o
+client: $(BIN_DIR)/$(OUT)_client$(BIN_EXT)
+$(BIN_DIR)/$(OUT)_client$(BIN_EXT): $(OBJECTS_NOMAINS) $(OBJ_DIR)/main_client.o
 	@mkdir -p $(dir $@)
-	$(LD) -o $@ $^ -mwindows $(LDFLAGS) $(LIBS)
+	$(LD) -o $@ $^ $(LDFLAGS) $(LIBS) $(CLIENT_LIBS)
 
 $(OBJ_DIR)/%.o: $(SRC)/%.cpp $(OBJ_DIR)/%.d
 	@mkdir -p $(dir $@)

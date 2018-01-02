@@ -24,7 +24,9 @@ int main (int argc, char** argv) {
 	if (SDLNet_Init() == -1)
 		return 2;
 
-	game::game_server server;
+	console::console console_cout;
+
+	game::game_server server(console_cout);
 
 	if (!server.open())
 		return 3;
@@ -34,7 +36,9 @@ int main (int argc, char** argv) {
 		while (server.is_open()) {
 			std::getline(std::cin, line);
 
-			server.command(line);
+			if (!line.empty() && !server.command(line)) {
+				console_cout.addLine(console::COLOR_ERROR, console::format(line, " is not a valid command"));
+			}
 		}
 	});
 

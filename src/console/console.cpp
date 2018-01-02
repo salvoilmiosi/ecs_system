@@ -43,4 +43,8 @@ std::string_view getCommand(std::string_view cmd) {
 	return getArgument(cmd, 0);
 }
 
+std::string_view getArgs(std::string_view cmd) {
+	return getArgument(cmd, 1);
+}
+
 }

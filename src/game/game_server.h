@@ -9,7 +9,7 @@ namespace game {
 
 class game_server {
 public:
-	game_server() : sock(wld) {}
+	game_server(console::console &console_dev) : sock(wld, console_dev) {}
 
 	bool open() {
 		return sock.open();
@@ -21,11 +21,7 @@ public:
 
 	void broadcast();
 
-	void command(std::string cmd) {
-		if (cmd == "quit") {
-			close();
-		}
-	}
+	bool command(const std::string &full_cmd);
 
 	bool is_open() {
 		return sock.is_open();

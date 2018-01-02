@@ -36,4 +36,17 @@ void game_server::broadcast() {
 	sock.sendAll(packet.data());
 }
 
+bool game_server::command(const std::string &full_cmd) {
+	if (!is_open()) {
+		return false;
+	}
+	
+	std::string_view cmd = console::getCommand(full_cmd);
+	if (cmd == "quit") {
+		close();
+		return true;
+	}
+	return false;
+}
+
 }

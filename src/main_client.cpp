@@ -1,3 +1,5 @@
+#include <SDL2/SDL_ttf.h>
+
 #include "game/game_client.h"
 #include "game/game_server.h"
 
@@ -11,6 +13,35 @@ const char *TITLE_CLIENT = "Sistema ECS - Client";
 const char *USER_NAME = "User";
 
 SDL_Renderer *renderer;
+
+void parseCommand(const std::string &cmd);
+
+console::console_ui console_dev(parseCommand, console::CONSOLE_DEV);
+
+game::game_server server(console_dev);
+game::game_client client(console_dev);
+
+bool initSDL() {
+	if (SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO) == -1)
+		return false;
+
+	if (SDLNet_Init() == -1)
+		return false;
+
+	if (TTF_Init() == -1)
+		return false;
+
+	SDL_StopTextInput();
+
+	return true;
+}
+
+void cleanupSDL() {
+	SDL_DestroyRenderer(renderer);
+	TTF_Quit();
+	SDLNet_Quit();
+	SDL_Quit();
+}
 
 bool createWindow(const char *title) {
 	SDL_Window *window = SDL_CreateWindow(title,
@@ -28,17 +59,18 @@ bool createWindow(const char *title) {
 	return true;
 }
 
+void parseCommand(const std::string &cmd) {
+	if (!client.command(cmd) && !server.command(cmd)) {
+		console_dev.addLine(console::COLOR_ERROR, console::format(cmd, " is not a valid command."));
+	}
+}
+
 }
 
 int main (int argc, char** argv) {
-	if (SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO) == -1)
+	if (!initSDL()) {
 		return 1;
-
-	if (SDLNet_Init() == -1)
-		return 1;
-
-	game::game_server server;
-	game::game_client client;
+	}
 
 	bool listenserver = false;
 
@@ -87,6 +119,8 @@ int main (int argc, char** argv) {
 		client.tick();
 		client.render(renderer);
 
+		console_dev.render(renderer);
+
 		SDL_RenderPresent(renderer);
 
 		while (SDL_PollEvent(&event)) {
@@ -98,13 +132,11 @@ int main (int argc, char** argv) {
 		}
 	}
 
-	console::addLine("Disconnected.");
+	console_dev.addLine(console::COLOR_LOG, "Disconnected.");
 
 	client.close();
 	server.close();
 
-	SDL_DestroyRenderer(renderer);
-	SDLNet_Quit();
-	SDL_Quit();
+	cleanupSDL();
 	return 0;
 }

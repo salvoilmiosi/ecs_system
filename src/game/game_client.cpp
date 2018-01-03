@@ -2,11 +2,11 @@
 
 namespace game {
 
-game_client::game_client(console::console_ui &console_dev) :
+game_client::game_client(console::console_dev &console_dev) :
 	console_dev(console_dev),
 	console_chat([&](const std::string &str) {
 		sock.sendMessage(str);
-	}, console::CONSOLE_CHAT) {}
+	}) {}
 
 void game_client::start() {
 

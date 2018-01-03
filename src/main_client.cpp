@@ -13,7 +13,7 @@ SDL_Renderer *renderer;
 
 void parseCommand(const std::string &cmd);
 
-console::console_ui console_dev(parseCommand, console::CONSOLE_DEV);
+console::console_dev console_dev(parseCommand);
 
 game::game_server server(console_dev);
 game::game_client client(console_dev);

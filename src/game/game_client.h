@@ -15,7 +15,7 @@ namespace game {
 
 class game_client {
 public:
-	game_client(console::console_ui &console_dev);
+	game_client(console::console_dev &console_dev);
 	
 	bool connect(IPaddress addr) {
 		if (sock.is_open()) {
@@ -64,8 +64,8 @@ public:
 	}
 
 private:
-	console::console_ui &console_dev;
-	console::console_ui console_chat;
+	console::console_dev &console_dev;
+	console::console_chat console_chat;
 
 	bool open = true;
 

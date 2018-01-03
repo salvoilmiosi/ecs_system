@@ -9,8 +9,8 @@
 #include <deque>
 #include <mutex>
 
-static const int SCREEN_W = 1024;
-static const int SCREEN_H = 768;
+static const int SCREEN_W = 800;
+static const int SCREEN_H = 600;
 
 namespace console {
 

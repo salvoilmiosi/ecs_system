@@ -44,16 +44,11 @@ private:
 	SDL_Rect rect;
 };
 
-enum console_type {
-	CONSOLE_DEV,
-	CONSOLE_CHAT
-};
-
 class console_ui : public console {
 public:
 	typedef std::function<void(const std::string &)> string_func;
 
-	console_ui(string_func func, console_type type);
+	console_ui(string_func func) : parseCommandFunc(func) {}
 
 	~console_ui() {
 		lines.clear();
@@ -61,14 +56,14 @@ public:
 	
 	virtual void addLine(Uint32 color, const std::string &msg);
 
-	void tick();
+	virtual void tick() {};
 
-	void render(SDL_Renderer *renderer);
+	virtual void render(SDL_Renderer *renderer) = 0;
 
 	// returns true if no events are handled
-	bool handleEvent(const SDL_Event &event);
+	virtual bool handleEvent(const SDL_Event &event);
 
-private:
+protected:
 	std::deque<console_line> lines;
 
 	string_func parseCommandFunc;
@@ -80,10 +75,28 @@ private:
 
 	Uint32 time_open;
 
-	console_type type;
-
 	TTF_Font *font;
 	int font_size = 16;
+};
+
+class console_dev : public console_ui {
+public:
+	console_dev(string_func func) : console_ui(func) {}
+
+	virtual void render(SDL_Renderer *renderer);
+
+	virtual bool handleEvent(const SDL_Event &event);
+};
+
+class console_chat : public console_ui {
+public:
+	console_chat(string_func func) : console_ui(func) {}
+
+	virtual void tick();
+
+	virtual void render(SDL_Renderer *renderer);
+
+	virtual bool handleEvent(const SDL_Event &event);
 };
 
 }

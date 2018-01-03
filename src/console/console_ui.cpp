@@ -48,8 +48,6 @@ void console_line::render(SDL_Renderer *renderer, TTF_Font *font, int x, int y) 
 	SDL_RenderCopy(renderer, texture, &rect, &dst_rect);
 }
 
-console_ui::console_ui(string_func func, console_type type) : parseCommandFunc(func), type(type) { }
-
 void console_ui::addLine(Uint32 color, const std::string &msg) {
 	std::lock_guard lock(l_mutex);
 	lines.emplace_back(msg, color);
@@ -59,20 +57,7 @@ void console_ui::addLine(Uint32 color, const std::string &msg) {
 }
 
 bool console_ui::handleEvent(const SDL_Event &event) {
-	SDL_Scancode key_to_open = (type == CONSOLE_CHAT) ? SDL_SCANCODE_RETURN : SDL_SCANCODE_GRAVE;
 	switch (event.type) {
-	case SDL_KEYUP:
-		if (!event.key.repeat && event.key.keysym.scancode == key_to_open) {
-			if (shown) {
-				shown = false;
-			} else {
-				time_open = event.key.timestamp;
-				typing = "";
-				shown = true;
-				SDL_StartTextInput();
-			}
-		}
-		break;
 	case SDL_KEYDOWN:
 		if (event.key.repeat) break;
 		switch (event.key.keysym.scancode) {
@@ -105,69 +90,128 @@ bool console_ui::handleEvent(const SDL_Event &event) {
 	default:
 		break;
 	}
+
 	return !shown;
 }
 
-void console_ui::tick() {
-	std::lock_guard lock(l_mutex);
-	if (type == CONSOLE_CHAT) {
-		if (!lines.empty() && lines.front().time_elapsed() > LINE_MAX_TIME) {
-			lines.pop_front();
+bool console_dev::handleEvent(const SDL_Event &event) {
+	switch (event.type) {
+	case SDL_KEYUP:
+		if (!event.key.repeat) switch(event.key.keysym.scancode) {
+		case SDL_SCANCODE_GRAVE:
+		case SDL_SCANCODE_BACKSLASH:
+			if (shown) {
+				shown = false;
+			} else {
+				time_open = event.key.timestamp;
+				typing = "";
+				shown = true;
+				SDL_StartTextInput();
+			}
+			break;
+		default:
+			break;
 		}
+		break;
+	default:
+		return console_ui::handleEvent(event);
+	}
+	return !shown;
+}
+
+bool console_chat::handleEvent(const SDL_Event &event) {
+	switch (event.type) {
+	case SDL_KEYUP:
+		if (!event.key.repeat) switch(event.key.keysym.scancode) {
+		case SDL_SCANCODE_RETURN:
+			if (shown) {
+				shown = false;
+			} else {
+				time_open = event.key.timestamp;
+				typing = "";
+				shown = true;
+				SDL_StartTextInput();
+			}
+			break;
+		default:
+			break;
+		}
+		break;
+	default:
+		return console_ui::handleEvent(event);
+	}
+	return !shown;
+}
+
+void console_chat::tick() {
+	std::lock_guard lock(l_mutex);
+	if (!lines.empty() && lines.front().time_elapsed() > LINE_MAX_TIME) {
+		lines.pop_front();
 	}
 }
 
-void console_ui::render(SDL_Renderer *renderer) {
+void console_dev::render(SDL_Renderer *renderer) {
 	if (!font) {
-		if (type == CONSOLE_DEV) {
-			font = TTF_OpenFont("font/courier.ttf", font_size);
-		} else {
-			font = TTF_OpenFont("font/OpenSans-Regular.ttf", font_size);
+		font = TTF_OpenFont("font/courier.ttf", font_size);
+		if (!font) return;
+	}
+
+	if (shown) {
+		std::lock_guard lock(l_mutex);
+
+		SDL_Rect bg_rect{0, 0, SCREEN_W, SCREEN_H};
+		bg_rect.h = font_size * (MAX_LINES + 1);
+
+		setRenderColor(renderer, COLOR_BG);
+		SDL_RenderFillRect(renderer, &bg_rect);
+
+		int x = bg_rect.x;
+		int y = bg_rect.y;
+		
+		for (auto &line : lines) {
+			line.render(renderer, font, x, y);
+			y += font_size;
 		}
+
+		y = bg_rect.y + bg_rect.h - font_size;
+		typing_line = ((SDL_GetTicks() - time_open) % (BLINK_TIME * 2) < BLINK_TIME) ? typing + BLINKER : typing;
+		typing_line.render(renderer, font, x, y);
+	}
+}
+
+void console_chat::render(SDL_Renderer *renderer) {
+	if (!font) {
+		font = TTF_OpenFont("font/OpenSans-Regular.ttf", font_size);
 		if (!font) return;
 	}
 
 	std::lock_guard lock(l_mutex);
-	if (!shown && type == CONSOLE_DEV) return;
 
 	SDL_Rect bg_rect{0, 0, SCREEN_W, SCREEN_H};
+	bg_rect.h = lines.size() * font_size;
+	bg_rect.y = SCREEN_H - bg_rect.h - font_size;
 
-	if (type == CONSOLE_DEV) {
-		bg_rect.h = font_size * (MAX_LINES + 1);
-	} else if (type == CONSOLE_CHAT) {
-		bg_rect.h = lines.size() * font_size;
-		bg_rect.y = SCREEN_H - bg_rect.h - font_size;
-		if (shown) {
-			bg_rect.h += font_size;
-		}
+	if (shown) {
+		bg_rect.h += font_size;
 	}
 
 	setRenderColor(renderer, COLOR_BG);
 	SDL_RenderFillRect(renderer, &bg_rect);
 
 	int x = bg_rect.x;
-	int y = bg_rect.y;
-	if (type == CONSOLE_CHAT) {
-		y += bg_rect.h;
-		if (shown) {
-			y -= font_size;
-		}
-		for (auto it = lines.rbegin(); it != lines.rend(); ++it) {
-			y -= font_size;
-			it->render(renderer, font, x, y);
-		}
-	} else {
-		for (auto &line : lines) {
-			line.render(renderer, font, x, y);
-			y += font_size;
-		}
+	int y = bg_rect.y + bg_rect.h;
+	if (shown) {
+		y -= font_size;
 	}
-	
-	if (!shown && type == CONSOLE_CHAT) return;
-
-	y = bg_rect.y + bg_rect.h - font_size;
-	typing_line = ((SDL_GetTicks() - time_open) % (BLINK_TIME * 2) < BLINK_TIME) ? typing + BLINKER : typing;
-	typing_line.render(renderer, font, x, y);
+	for (auto it = lines.rbegin(); it != lines.rend(); ++it) {
+		y -= font_size;
+		it->render(renderer, font, x, y);
+	}
+	if (shown) {
+		y = bg_rect.y + bg_rect.h - font_size;
+		typing_line = ((SDL_GetTicks() - time_open) % (BLINK_TIME * 2) < BLINK_TIME) ? typing + BLINKER : typing;
+		typing_line.render(renderer, font, x, y);
+	}
 }
 
 }

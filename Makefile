@@ -3,7 +3,7 @@ LD = g++
 MAKE = make
 CFLAGS = -Wall --std=c++1z
 LDFLAGS =
-LIBS = $(LIB_SDLdraw) -lSDL2 -lSDL2_net -lSDL2_ttf -pthread 
+LIBS = -lSDL2 -lSDL2_net -lSDL2_ttf $(LIB_SDLdraw) -pthread 
 CLIENT_LIBS = 
 SRC = src
 OUT = out

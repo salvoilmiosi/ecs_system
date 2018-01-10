@@ -68,6 +68,8 @@ void game_client::tick() {
 	wld.executeSystem<scale, shrinking>([&](ecs::entity_id id, scale &sca, shrinking &shr) {
 		sca.value *= shr.value;
 	});
+
+	/* THIS IS VERY SLOW: O(N^2) collision checking */
 	wld.executeSystem<circle, collision, position, velocity, scale>([&](ecs::entity_id ball_a, position&, velocity&, scale&) {
 		wld.executeSystem<circle, collision, position, velocity, scale>([&](ecs::entity_id ball_b, position&, velocity&, scale&) {
 			if (ball_a != ball_b && collides(ball_a, ball_b)) {
@@ -75,6 +77,7 @@ void game_client::tick() {
 			}
 		});
 	});
+
 	wld.executeSystem<health, dying>([&](ecs::entity_id me, health &hp) {
 		--hp.value;
 	});
@@ -180,7 +183,9 @@ static const int SPRITE_H = 512;
 
 class texture_holder {
 public:
-	texture_holder(SDL_Renderer *renderer);
+	texture_holder(SDL_Renderer *renderer) {
+		surface = SDL_CreateRGBSurface(0, SPRITE_W, SPRITE_H, 32, 0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff);
+	}
 	~texture_holder() {
 		if (surface) SDL_FreeSurface(surface);
 		if (texture) SDL_DestroyTexture(texture);
@@ -190,14 +195,15 @@ public:
 
 protected:
 	SDL_Surface *surface = nullptr;
+
+private:
 	SDL_Texture *texture = nullptr;
 };
 
-texture_holder::texture_holder(SDL_Renderer *renderer) {
-	surface = SDL_CreateRGBSurface(0, SPRITE_W, SPRITE_H, 32, 0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff);
-}
-
 void texture_holder::draw(SDL_Renderer *renderer, SDL_Rect *rect, Uint32 color, float rotation) {
+	if (!texture)
+		texture = SDL_CreateTextureFromSurface(renderer, surface);
+
 	SDL_QueryTexture(texture, nullptr, nullptr, &surface->w, &surface->h);
 
 	Uint8 r = (color & 0xff000000) >> (8 * 3);
@@ -213,30 +219,23 @@ void texture_holder::draw(SDL_Renderer *renderer, SDL_Rect *rect, Uint32 color, 
 	}
 }
 
-class square : public texture_holder {
+class square_texture : public texture_holder {
 public:
-	square(SDL_Renderer *renderer);
+	square_texture(SDL_Renderer *renderer) : texture_holder(renderer) {
+		SDL_FillRect(surface, &surface->clip_rect, 0xffffffff);
+	}
 };
 
-square::square(SDL_Renderer *renderer) : texture_holder(renderer) {
-	SDL_FillRect(surface, &surface->clip_rect, 0xffffffff);
-	texture = SDL_CreateTextureFromSurface(renderer, surface);
-}
-
-class circle : public texture_holder {
+class circle_texture : public texture_holder {
 public:
-	circle(SDL_Renderer *renderer);
+	circle_texture(SDL_Renderer *renderer) : texture_holder(renderer) {
+		SDL_FillRect(surface, &surface->clip_rect, 0x0);
+		Draw_FillCircle(surface, surface->w / 2, surface->h / 2, ((surface->w < surface->h) ? surface->w : surface->h) / 2, 0xffffffff);
+	}
 };
-
-circle::circle(SDL_Renderer *renderer) : texture_holder(renderer) {
-	SDL_FillRect(surface, &surface->clip_rect, 0x0);
-	Draw_FillCircle(surface, surface->w / 2, surface->h / 2, ((surface->w < surface->h) ? surface->w : surface->h) / 2, 0xffffffff);
-
-	texture = SDL_CreateTextureFromSurface(renderer, surface);
-}
 
 void game_client::renderSquare(SDL_Renderer *renderer, ecs::entity_id ent, color &col, position &pos, scale &s) {
-	static square texture(renderer);
+	static square_texture texture(renderer);
 
 	SDL_Rect rect {(int)(pos.value.x - s.value * 0.5f), (int)(pos.value.y - s.value * 0.5f), (int)s.value, (int)s.value};
 
@@ -248,7 +247,7 @@ void game_client::renderSquare(SDL_Renderer *renderer, ecs::entity_id ent, color
 }
 
 void game_client::renderCircle(SDL_Renderer *renderer, ecs::entity_id ent, color &col, position &pos, scale &s) {
-	static circle texture(renderer);
+	static circle_texture texture(renderer);
 
 	SDL_Rect rect {(int)(pos.value.x - s.value * 0.5f), (int)(pos.value.y - s.value * 0.5f), (int)s.value, (int)s.value};
 

@@ -10,71 +10,54 @@
 
 #include "vector.h"
 
-struct int_component {
-	int value;
+template<typename T>
+struct component {
+	T value;
 
-	int_component(int value) : value(value) {}
-
-	void read(packet_reader&);
-	void write(packet_writer&) const;
-};
-
-struct float_component {
-	float value;
-
-	float_component(float value) : value(value) {}
+	component(T value) : value(value) {}
 
 	void read(packet_reader&);
 	void write(packet_writer&) const;
 };
 
-struct vec_component {
-	vector2d value;
-
-	vec_component(float x = 0.f, float y = 0.f) : value{x, y} {}
-
-	void read(packet_reader&);
-	void write(packet_writer&) const;
-};
-
-struct color : int_component {
-	color(int value = 0) : int_component(value) {}
+struct color : component<int> {
+	color(int value = 0) : component<int>(value) {}
 };
 
 struct square : ecs::tag { };
 
 struct circle : ecs::tag { };
 
-struct position : vec_component {
-	position(float x = 0.f, float y = 0.f) : vec_component(x, y) {};
+struct position : component<vector2d> {
+	position(double x = 0.f, double y = 0.f) : component<vector2d>(vector2d(x, y)) {};
 };
 
-struct rotation : float_component {
-	rotation(float value = 0.f) : float_component(value) {}
+struct rotation : component<float> {
+	rotation(float value = 0.f) : component<float>(value) {}
 };
 
-struct rotation_accel : float_component {
-	rotation_accel(float value = 0.f) : float_component(value) {}
+struct rotation_accel : component<float> {
+	rotation_accel(float value = 0.f) : component<float>(value) {}
 };
 
-struct velocity : vec_component {
-	velocity(float x = 0.f, float y = 0.f) : vec_component(x, y) {};
+struct velocity : component<vector2d> {
+	velocity(double x = 0.f, double y = 0.f) : component<vector2d>(vector2d(x, y)) {};
 };
 
-struct acceleration : vec_component {
-	acceleration(float x = 0.f, float y = 0.f) : vec_component(x, y) {};
+struct acceleration : component<vector2d> {
+	acceleration(double x = 0.f, double y = 0.f) : component<vector2d>(vector2d(x, y)) {};
 };
 
-struct scale : float_component {
-	scale(float value = 1.f) : float_component(value) {}
+struct scale : component<float> {
+	scale(float value = 1.f) : component<float>(value) {}
 };
 
-struct shrinking : float_component {
-	shrinking(float value = 1.f) : float_component(value) {}
+struct shrinking : component<float> {
+	shrinking(float value = 1.f) : component<float>(value) {}
 };
 
-struct health : int_component {
-	health(int value = 100) : int_component(value) {}
+struct health : component<int> {
+	health(int value = 100) : component<int>(value) {}
 };
 
 struct generator : ecs::tag { };

@@ -7,7 +7,6 @@ class vector2d {
 public:
     vector2d() {};
     vector2d(double x, double y): x(x), y(y) {};
-    virtual ~vector2d() {};
 
     vector2d(const vector2d &vec) {
         *this = vec;

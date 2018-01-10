@@ -18,8 +18,10 @@ void game_server::tick() {
 	wld.executeSystem<scale, shrinking>([&](ecs::entity_id id, scale &sca, shrinking &shr) {
 		sca.value *= shr.value;
 	});
-	wld.executeSystem<health>([&](ecs::entity_id me, health &hp) {
+	wld.executeSystem<health, dying>([&](ecs::entity_id me, health &hp) {
 		--hp.value;
+	});
+	wld.executeSystem<health>([&](ecs::entity_id me, health &hp) {
 		if (hp.value <= 0) {
 			wld.removeEntity(me);
 		}

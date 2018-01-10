@@ -74,13 +74,12 @@ void edit_logger<ComponentList>::read(packet_reader &in) {
 		if (edit.type == EDIT_NONE) continue;
 		
 		edit.id = readLongLong(in);
-
-		edit.mask = readLongLong(in);
+		edit.mask = readBitset<edit.mask.size()>(in);
 
 		if (edit.type != EDIT_MASK) {
 			mpl::for_each_in_tuple(edit.data, [&](auto &comp) {
 				using component_type = typename std::remove_reference<decltype(comp)>::type;
-				static_assert(!std::is_base_of<ecs::tag, component_type>::value);
+				static_assert(!world<ComponentList>::template isTag<component_type>());
 				auto c_mask = world<ComponentList>::template generateMask<component_type> ();
 				if ((edit.mask & c_mask) == c_mask) {
 					comp.read(in);
@@ -100,13 +99,13 @@ void edit_logger<ComponentList>::write(packet_writer &out) {
 		if (edit.type == EDIT_NONE) return;
 
 		writeLongLong(out, edit.id);
-		writeLongLong(out, edit.mask.to_ullong());
+		writeBitset(out, edit.mask);
 
 		if (edit.type == EDIT_MASK) return;
 
 		mpl::for_each_in_tuple(edit.data, [&](auto &comp) {
 			using component_type = typename std::remove_reference<decltype(comp)>::type;
-			static_assert(!std::is_base_of<ecs::tag, component_type>::value);
+			static_assert(!world<ComponentList>::template isTag<component_type>());
 			auto c_mask = world<ComponentList>::template generateMask<component_type>();
 			if ((edit.mask & c_mask) == c_mask) {
 				comp.write(out);

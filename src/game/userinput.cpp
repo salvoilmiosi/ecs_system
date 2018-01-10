@@ -8,7 +8,7 @@ void handler::handleCommand(ecs::world_io<MyComponents> &wld, command cmd) {
 		ent = wld.createEntity(cmd.pos, generator());
 		break;
 	case CMD_UP:
-		wld.addComponent(ent, health(5));
+		wld.addComponents(ent, health(5), dying());
 		ent = 0;
 		break;
 	case CMD_MOVE:

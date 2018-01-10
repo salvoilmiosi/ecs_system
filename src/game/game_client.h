@@ -18,19 +18,17 @@ public:
 	game_client(console::console_dev &console_dev);
 	
 	bool connect(IPaddress addr) {
-		if (sock.is_open()) {
-			disconnect();
-		}
+		disconnect(); // If connected already
 		return sock.connect(addr, username);
 	}
 
-	bool connect(const std::string &str) {
-		IPaddress addr;
-		if (SDLNet_ResolveHost(&addr, str.c_str(), net::PORT)) {
-			console_dev.addLine(console::COLOR_ERROR, console::format("Could not resolve ", str));
+	bool connect(const std::string &addr) {
+		disconnect(); // If connected already
+		if (! sock.connect(addr, username)) {
+			console_dev.addLine(console::COLOR_ERROR, console::format("Could not resolve ", addr));
 			return false;
 		}
-		return connect(addr);
+		return true;
 	}
 
 	void disconnect() {
@@ -79,7 +77,13 @@ private:
 
 	void generateParticles(position &pos);
 
-	void renderEntity(SDL_Renderer *renderer, sprite &spr, position &pos, scale &s);
+	void renderSquare(SDL_Renderer *renderer, ecs::entity_id ent, color &col, position &pos, scale &s);
+
+	void renderCircle(SDL_Renderer *renderer, ecs::entity_id ent, color &col, position &pos, scale &s);
+
+	bool collides(ecs::entity_id ball_a, ecs::entity_id ball_b);
+
+	void resolveCollision(ecs::entity_id ball_a, ecs::entity_id ball_b);
 };
 
 }

@@ -49,6 +49,14 @@ bool client_socket::connect(IPaddress addr, const std::string &username) {
 	return true;
 }
 
+bool client_socket::connect(const std::string &addr_str, const std::string &username) {
+	IPaddress addr;
+	if (SDLNet_ResolveHost(&addr, addr_str.c_str(), net::PORT)) {
+		return false;
+	}
+	return connect(addr, username);
+}
+
 void client_socket::disconnect() {
 	if (is_open()) {
 		sendDisconnect("Disconnect by user");

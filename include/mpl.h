@@ -70,26 +70,6 @@ template <typename T, typename TTypeList>
 using Contains =
 	std::integral_constant<bool, (Count<T, TTypeList>{} > 0)>;
 
-template <typename TCheckTypeList, typename TTypeList>
-struct ContainsAllHelper;
-
-template <typename TCheckTypeList, typename TTypeList>
-using ContainsAll =
-	typename ContainsAllHelper<TCheckTypeList, TTypeList>::type;
-
-template <typename T, typename... TRest, typename TTypeList>
-struct ContainsAllHelper<TypeList<T, TRest...>, TTypeList>
-	: std::integral_constant<bool,
-		  Contains<T, TTypeList>{} &&
-			  ContainsAll<TypeList<TRest...>, TTypeList>{}>
-{
-};
-
-template <typename TTypeList>
-struct ContainsAllHelper<TypeList<>, TTypeList> : std::true_type
-{
-};
-
 template <typename TTypeList>
 struct allHaveDefaultConstructor {};
 

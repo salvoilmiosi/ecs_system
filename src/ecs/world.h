@@ -39,31 +39,10 @@ using stripTags = typename stripTagsHelper<T>::type;
 
 template<typename ComponentList, size_t MaxEntities = MAX_ENTITIES_DEFAULT>
 class world {
-	static_assert(mpl::allHaveDefaultConstructor<ComponentList>{});
-
-protected:
-	template<typename T>
-	using container = std::array<T, MaxEntities>;
-
-	template<typename ... Ts>
-	using components_tuple = std::tuple<container<Ts>...>;
-
-	using ComponentsNoTags = stripTags<ComponentList>;
-	mpl::Rename<components_tuple, ComponentsNoTags> component_data;
-
+public:
 	typedef std::bitset<ComponentList::size> component_mask;
-	struct entity {
-		bool alive = false;
-		component_mask mask;
-	};
 
-	container<entity_id> entity_id_list;
-	container<entity> entity_list;
-
-	size_t currentSize = 0;
-	size_t nextSize = 0;
-	size_t maxSize = 0;
-	size_t capacity = MaxEntities;
+	static_assert(mpl::allHaveDefaultConstructor<ComponentList>{});
 
 	template<typename T>
 	static constexpr bool isComponent() {
@@ -72,26 +51,14 @@ protected:
 
 	template<typename ... Ts>
 	static constexpr bool areAllComponents() {
-		return mpl::ContainsAll<mpl::TypeList<Ts...>, ComponentList>{};
+		return (isComponent<Ts>() && ...);
 	}
 
 	template<typename T>
 	static constexpr bool isTag() {
-		return std::is_base_of<tag, T>::value;
+		return isComponent<T>() && std::is_base_of<tag, T>::value;
 	}
 
-private:
-	void growContainers();
-
-	void addComponentsHelper(entity_id ent) {}
-
-	template<typename T, typename ... Ts>
-	void addComponentsHelper(entity_id ent, T first, Ts ... components) {
-		addComponent(ent, first);
-		addComponentsHelper(ent, components ...);
-	}
-
-public:
 	template<typename ... Ts>
 	constexpr static component_mask generateMask() {
 		static_assert(areAllComponents<Ts ...>());
@@ -136,6 +103,12 @@ public:
 		return entityMatches(ent, generateMask<Ts...>());
 	}
 
+	template<typename T>
+	bool hasComponent(entity_id ent) {
+		static_assert(isComponent<T>());
+		return entityMatches(ent, generateMask<T>());
+	}
+
 	template<typename ... Ts>
 	entity_id createEntity(Ts ... components);
 
@@ -177,7 +150,40 @@ public:
 		});
 	}
 
+protected:
+	template<typename T>
+	using container = std::array<T, MaxEntities>;
+
+	template<typename ... Ts>
+	using components_tuple = std::tuple<container<Ts>...>;
+
+	using ComponentsNoTags = stripTags<ComponentList>;
+	mpl::Rename<components_tuple, ComponentsNoTags> component_data;
+
+	struct entity {
+		bool alive = false;
+		component_mask mask;
+	};
+
+	container<entity_id> entity_id_list;
+	container<entity> entity_list;
+
+	size_t currentSize = 0;
+	size_t nextSize = 0;
+	size_t maxSize = 0;
+	size_t capacity = MaxEntities;
+
 private:
+	void growContainers();
+
+	void addComponentsHelper(entity_id ent) {}
+
+	template<typename T, typename ... Ts>
+	void addComponentsHelper(entity_id ent, T first, Ts ... components) {
+		addComponent(ent, first);
+		addComponentsHelper(ent, components ...);
+	}
+
 	template<typename T>
 	struct callSystemFunc;
 

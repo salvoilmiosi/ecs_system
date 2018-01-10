@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <string>
+#include <bitset>
 
 typedef std::vector<uint8_t> packet_data;
 
@@ -77,5 +78,33 @@ void writeFloat(packet_writer &out, const float &obj);
 
 double readDouble(packet_reader &in);
 void writeDouble(packet_writer &out, const double &obj);
+
+template<size_t Size>
+std::bitset<Size> readBitset(packet_reader &in) {
+	if constexpr (Size <= 32) {
+		return readLong(in);
+	} else if constexpr (Size <= 64) {
+		return readLongLong(in);
+	} else {
+		std::bitset<Size> bits;
+		for (size_t i = 0; i < Size; i += 32) {
+			bits |= std::bitset<Size>(readLong(in)) << i;
+		}
+		return bits;
+	}
+}
+
+template<size_t Size>
+void writeBitset(packet_writer &out, const std::bitset<Size> &bits) {
+	if constexpr (Size <= 32)  {
+		writeLong(out, bits.to_ulong());
+	} else if constexpr (Size <= 64) {
+		writeLongLong(out, bits.to_ullong());
+	} else {
+		for (size_t i = 0; i < Size; i += 32) {
+			writeLong(out, ((bits >> i) & std::bitset<Size>(0xffffffff)).to_ulong());
+		}
+	}
+}
 
 #endif // __PACKET_DATA_H__

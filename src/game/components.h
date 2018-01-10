@@ -3,13 +3,12 @@
 
 #include <string>
 
+#include <SDL2/SDL.h>
+
 #include "ecs/world.h"
 #include "ecs/packet_data.h"
 
-struct vector2d {
-	float x;
-	float y;
-};
+#include "vector.h"
 
 struct int_component {
 	int value;
@@ -38,20 +37,24 @@ struct vec_component {
 	void write(packet_writer&) const;
 };
 
-struct sprite {
-	std::string src;
-	int color = 0;
-
-	sprite() {}
-	sprite(std::string src) : src(src) {}
-	sprite(int color) : color(color) {}
-
-	void read(packet_reader&);
-	void write(packet_writer&) const;
+struct color : int_component {
+	color(int value = 0) : int_component(value) {}
 };
+
+struct square : ecs::tag { };
+
+struct circle : ecs::tag { };
 
 struct position : vec_component {
 	position(float x = 0.f, float y = 0.f) : vec_component(x, y) {};
+};
+
+struct rotation : float_component {
+	rotation(float value = 0.f) : float_component(value) {}
+};
+
+struct rotation_accel : float_component {
+	rotation_accel(float value = 0.f) : float_component(value) {}
 };
 
 struct velocity : vec_component {
@@ -76,7 +79,13 @@ struct health : int_component {
 
 struct generator : ecs::tag { };
 
+struct dying : ecs::tag { };
+
+struct collision : ecs::tag {};
+
+struct screen_bounce : ecs::tag { };
+
 using MyComponents = ecs::component_list<
-	sprite, position, velocity, acceleration, scale, shrinking, health, generator>;
+	color, square, circle, position, rotation, rotation_accel, velocity, acceleration, scale, shrinking, health, generator, dying, collision, screen_bounce>;
 
 #endif

@@ -25,13 +25,3 @@ void vec_component::write(packet_writer &out) const {
 	writeFloat(out, value.x);
 	writeFloat(out, value.y);
 }
-
-void sprite::read(packet_reader &in) {
-	src = readString(in);
-	color = readLong(in);
-}
-
-void sprite::write(packet_writer &out) const {
-	writeString(out, src);
-	writeLong(out, color);
-}

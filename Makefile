@@ -3,17 +3,19 @@ LD = g++
 MAKE = make
 CFLAGS = -Wall --std=c++1z
 LDFLAGS =
-LIBS = -lSDL2 -lSDL2_net -lSDL2_ttf -pthread
+LIBS = $(LIB_SDLdraw) -lSDL2 -lSDL2_net -lSDL2_ttf -pthread 
 CLIENT_LIBS = 
 SRC = src
 OUT = out
-INC_DIR = include $(SRC)
+INC_DIR = include $(SRC) SDL_draw/include
 BIN_DIR = bin
 OBJ_DIR = obj
 RES_DIR = resource
 MAINS = server client
 BUILDS = debug release
 OUT = ecs_system
+
+LIB_SDLdraw = SDL_draw/lib/libSDL_draw.a
 
 ifdef BUILD
 	BIN_DIR := $(BUILD)/$(BIN_DIR)
@@ -74,9 +76,12 @@ $(BIN_DIR)/$(OUT)_server$(BIN_EXT): $(OBJECTS_NOMAINS) $(OBJ_DIR)/main_server.o
 	$(LD) -o $@ $^ $(LDFLAGS) $(LIBS)
 
 client: $(BIN_DIR)/$(OUT)_client$(BIN_EXT)
-$(BIN_DIR)/$(OUT)_client$(BIN_EXT): $(OBJECTS_NOMAINS) $(OBJ_DIR)/main_client.o
+$(BIN_DIR)/$(OUT)_client$(BIN_EXT): $(OBJECTS_NOMAINS) $(OBJ_DIR)/main_client.o $(LIB_SDLdraw)
 	@mkdir -p $(dir $@)
 	$(LD) -o $@ $^ $(LDFLAGS) $(LIBS) $(CLIENT_LIBS)
+
+$(LIB_SDLdraw):
+	$(MAKE) -C SDL_draw
 
 $(OBJ_DIR)/%.o: $(SRC)/%.cpp $(OBJ_DIR)/%.d
 	@mkdir -p $(dir $@)

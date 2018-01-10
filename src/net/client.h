@@ -36,6 +36,8 @@ public:
 
 	bool connect(IPaddress addr, const std::string &username);
 
+	bool connect(const std::string &addr, const std::string &username);
+
 	void disconnect();
 
 	bool is_open() {
